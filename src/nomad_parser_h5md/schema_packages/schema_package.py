@@ -16,13 +16,13 @@ from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.metainfo import Quantity, SchemaPackage
 
 configuration = config.get_plugin_entry_point(
-    'nomad_parser_h5md.schema_packages:schema_package_entry_point'
+    'nomad_parser_h5md.schema_packages:h5md_schema_package_entry_point'
 )
 
 m_package = SchemaPackage()
 
 
-class NewSchemaPackage(Schema):
+class H5MDSchemaPackage(Schema):
     name = Quantity(
         type=str, a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity)
     )
@@ -31,7 +31,7 @@ class NewSchemaPackage(Schema):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        logger.info('NewSchema.normalize', parameter=configuration.parameter)
+        logger.info('H5MDSchema.normalize', parameter=configuration.parameter)
         self.message = f'Hello {self.name}!'
 
 

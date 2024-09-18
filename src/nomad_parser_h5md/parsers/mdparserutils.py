@@ -30,6 +30,18 @@ from runschema.calculation import Calculation
 from runschema.method import Interaction, Model
 from simulationworkflowschema import MolecularDynamics
 
+# nomad-simulations
+from nomad_simulations.schema_packages.outputs import (
+    TotalEnergy,
+    TotalForce,
+    TrajectoryOutputs,
+)
+from nomad_simulations.schema_packages.properties.energies import EnergyContribution
+from nomad_simulations.schema_packages.properties.forces import ForceContribution
+from nomad_simulations.schema_packages.general import Simulation
+from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
+
 
 class MDParser(Parser):
     def __init__(self, **kwargs) -> None:
@@ -120,7 +132,13 @@ class MDParser(Parser):
         self._trajectory_steps_sampled = []
         super().parse(*args, **kwargs)
 
-    def parse_trajectory_step(self, data: Dict[str, Any]) -> None:
+    def parse_trajectory_step(
+        self,
+        data: Dict[str, Any],
+        simulation: Simulation,
+        model_system: ModelSystem = None,
+        atomic_cell: AtomicCell = None,
+    ) -> None:
         """
         Create a system section and write the provided data.
         """
@@ -129,43 +147,70 @@ class MDParser(Parser):
 
         if (step := data.get('step')) is not None and step not in self.trajectory_steps:
             return
+        if model_system is None:
+            model_system = ModelSystem()
+        if atomic_cell is None:
+            atomic_cell = AtomicCell()
 
-        if self.archive.run:
-            sec_run = self.archive.run[-1]
-        else:
-            sec_run = Run()
-            self.archive.run.append(sec_run)
+        atomic_cell_dict = data.pop('atomic_cell')
+        atom_labels = atomic_cell_dict.pop('labels')
+        for label in atom_labels:
+            atoms_state = AtomsState(
+                chemical_symbol=label
+            )  # ? how can I customize AtomsState within the parser?
+            atomic_cell.atoms_state.append(atoms_state)
+        self.parse_section(atomic_cell_dict, atomic_cell)
+        model_system.cell.append(atomic_cell)
+        self.parse_section(data, model_system)
+        simulation.model_system.append(model_system)
 
-        sec_system = System()
-        sec_run.system.append(sec_system)
-        self.parse_section(data, sec_system)
-
-    def parse_thermodynamics_step(self, data: Dict[str, Any]) -> None:
-        """
-        Create a calculation section and write the provided data.
-        """
+    def parse_output_step(
+        self,
+        data: Dict[str, Any],
+        simulation: Simulation,
+        output: TrajectoryOutputs = None,
+    ) -> bool:
         if self.archive is None:
-            return
+            return False
 
         if (
             step := data.get('step')
         ) is not None and step not in self.thermodynamics_steps:
-            return
+            return False
 
-        if self.archive.run:
-            sec_run = self.archive.run[-1]
-        else:
-            sec_run = Run()
-            self.archive.run.append(sec_run)
-        sec_calc = Calculation()
-        sec_run.calculation.append(sec_calc)
+        if output is None:
+            output = TrajectoryOutputs()
 
-        self.parse_section(data, sec_calc)
+        energy_contributions = data.get('total_energies', {}).pop('contributions', {})
+        force_contributions = data.get('total_forces', {}).pop('contributions', {})
+        self.parse_section(data, output)
         try:
-            system_ref_index = self.trajectory_steps.index(sec_calc.step)
-            sec_calc.system_ref = sec_run.system[system_ref_index]
+            system_ref_index = self.trajectory_steps.index(output.step)
+            output.model_system_ref = simulation.model_system[system_ref_index]
         except Exception:
-            pass
+            self.logger.warning('Could not set system reference in parsing of outputs.')
+
+        if energy_contributions:
+            if len(output.total_energies) == 0:
+                output.total_energies.append(TotalEnergy())
+
+        for energy_dict in energy_contributions:
+            energy = EnergyContribution()  # self.energy_classes[energy_label]()
+            output.total_energies[-1].contributions.append(energy)
+            self.parse_section(energy_dict, energy)
+
+        if force_contributions:
+            if len(output.total_forces) == 0:
+                output.total_forces.append(TotalForce())
+
+        for force_dict in force_contributions:
+            force = ForceContribution()  #  self.force_classes[force_label]()
+            output.total_forces[-1].contributions.append(force)
+            self.parse_section(force_dict, force)
+
+        simulation.outputs.append(output)
+
+        return True
 
     def parse_md_workflow(self, data: Dict[str, Any]) -> None:
         """
