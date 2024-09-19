@@ -223,6 +223,7 @@ class MDParser(Parser):
         self.parse_section(data, sec_workflow)
         self.archive.workflow2 = sec_workflow
 
+    # TODO Adapt these interaction functions for the new schema
     def parse_interactions(self, interactions: List[Dict], sec_model: MSection) -> None:
         if not interactions:
             return
