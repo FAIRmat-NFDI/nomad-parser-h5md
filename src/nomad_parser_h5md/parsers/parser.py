@@ -45,7 +45,7 @@ from nomad_parser_h5md.schema_packages.schema import (
     Author,
     ModelSystem,
     TrajectoryOutputs,
-    OutputsEntry,
+    CustomProperty,
     ParamEntry,
     ForceEntry,
     EnergyEntry,
@@ -669,31 +669,6 @@ class H5MDParser(MDParser):
                     f'{path_particlesgroup_key}.particles_group',
                 )
 
-    # # TODO move this function to the MDParser class
-    # def parse_trajectory_step(
-    #     self, data: Dict[str, Any], simulation: Simulation
-    # ) -> None:
-    #     """
-    #     Create a system section and write the provided data.
-    #     """
-    #     if self.archive is None:
-    #         return
-
-    #     if (step := data.get('step')) is not None and step not in self.trajectory_steps:
-    #         return
-
-    #     model_system = ModelSystem()
-    #     atomic_cell = AtomicCell()
-    #     atomic_cell_dict = data.pop('atomic_cell')
-    #     atom_labels = atomic_cell_dict.pop('labels')
-    #     for label in atom_labels:
-    #         atoms_state = AtomsState(chemical_symbol=label)
-    #         atomic_cell.atoms_state.append(atoms_state)
-    #     self.parse_section(atomic_cell_dict, atomic_cell)
-    #     model_system.cell.append(atomic_cell)
-    #     self.parse_section(data, model_system)
-    #     simulation.model_system.append(model_system)
-
     def parse_system(self, simulation):
         system_info = self._system_info.get('system')
         if not system_info:
@@ -746,49 +721,6 @@ class H5MDParser(MDParser):
                     simulation.model_system[-1], topology, path_topology
                 )
 
-    # # TODO move this function to the MDParser class and rename!
-    # def parse_output_step(self, data: Dict[str, Any], simulation: Simulation) -> bool:
-    #     if self.archive is None:
-    #         return False
-
-    #     if (
-    #         step := data.get('step')
-    #     ) is not None and step not in self.thermodynamics_steps:
-    #         return False
-
-    #     output = TrajectoryOutputs()
-
-    #     energy_contributions = data.get('total_energies', {}).pop('contributions', {})
-    #     force_contributions = data.get('total_forces', {}).pop('contributions', {})
-    #     self.parse_section(data, output)
-    #     try:
-    #         system_ref_index = self.trajectory_steps.index(output.step)
-    #         output.model_system_ref = simulation.model_system[system_ref_index]
-    #     except Exception:
-    #         self.logger.warning('Could not set system reference in parsing of outputs.')
-
-    #     if energy_contributions:
-    #         if len(output.total_energies) == 0:
-    #             output.total_energies.append(TotalEnergy())
-
-    #     for energy_dict in energy_contributions:
-    #         energy = EnergyContribution()  # self.energy_classes[energy_label]()
-    #         output.total_energies[-1].contributions.append(energy)
-    #         self.parse_section(energy_dict, energy)
-
-    #     if force_contributions:
-    #         if len(output.total_forces) == 0:
-    #             output.total_forces.append(TotalForce())
-
-    #     for force_dict in force_contributions:
-    #         force = ForceContribution()  #  self.force_classes[force_label]()
-    #         output.total_forces[-1].contributions.append(force)
-    #         self.parse_section(force_dict, force)
-
-    #     simulation.outputs.append(output)
-
-    #     return True
-
     def parse_outputs(self, simulation: Simulation):
         outputs_info = self._observable_info.get('configurational')
         if (
@@ -815,11 +747,6 @@ class H5MDParser(MDParser):
                 'x_h5md_energy_contributions': [],
                 'x_h5md_force_contributions': [],
             }
-            data_h5md_new = {
-                'x_h5md_custom_calculations': [],
-                'x_h5md_energy_contributions': [],
-                'x_h5md_force_contributions': [],
-            }
             data_outputs['time'] = outputs_info.get(step, {}).pop('time')
             if not data_outputs['time']:
                 data_outputs['time'] = system_info.get(step, {}).pop('time')
@@ -841,26 +768,16 @@ class H5MDParser(MDParser):
                     if val.check('[energy]/[substance]') and 'mole' in str(val.units):
                         val = val * ureg.mole / MOL
 
-                    # if observable_label in self.energy_classes.keys(): # ? I don't think I need this anymore
                     data_outputs['total_energies']['contributions'].append(
                         {'name': observable_label, 'value': val}
                     )
-                    # else:
-                    #     data_h5md['x_h5md_energy_contributions'].append(
-                    #         EnergyEntry(name=key, value=val)
-                    #     )
                 elif 'force' in key:
                     if 'forces' not in key:
                         key.replace('force', 'forces')
 
-                    # if observable_label in self.force_classes.keys(): # ? I don't think I need this anymore
                     data_outputs['total_forces']['contributions'].append(
                         {'name': observable_label, 'value': val}
                     )
-                    # else:
-                    #     data_h5md['x_h5md_force_contributions'].append(
-                    #         ForceEntry(name=key, value=val)
-                    #     )
                 elif hasattr(TrajectoryOutputs, observable_label):
                     data_outputs[observable_label] = {'value': val}
                 else:
@@ -869,10 +786,7 @@ class H5MDParser(MDParser):
                         unit = val.units
                         val = val.magnitude
                     data_h5md['x_h5md_custom_calculations'].append(
-                        OutputsEntry(name=key, value=val, unit=unit)
-                    )
-                    data_h5md_new['x_h5md_custom_calculations'].append(
-                        {'name': key, 'value': val, 'unit': unit}
+                        CustomProperty(name=key, value=val, unit=unit)
                     )
 
             flag_parsed = self.parse_output_step(data_outputs, simulation)

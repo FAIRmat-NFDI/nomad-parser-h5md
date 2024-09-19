@@ -102,8 +102,9 @@ def test_md(parser):
     assert sec_outputs[1].total_forces[0].value[2100][2].to(
         'newton'
     ).magnitude == approx(500.0)
-    print(sec_outputs)
     assert sec_outputs[2].temperatures[0].value.to('kelvin').magnitude == approx(300.0)
+    print(sec_outputs[2].x_h5md_custom_outputs[0])
+    assert sec_outputs[2].x_h5md_custom_outputs[0].m_def.name == 'CustomProperty'
     assert len(sec_outputs[1].x_h5md_custom_outputs) == 1
     assert (
         sec_outputs[1].x_h5md_custom_outputs[0].name
@@ -116,24 +117,15 @@ def test_md(parser):
     assert sec_outputs[2].total_energies[0].value.to('kilojoule').magnitude == approx(
         6.0
     )
-    assert (
-        sec_outputs[2].total_energies[0].contributions[0].m_def.name
-        == 'EnergyContribution'  # 'CustomEnergy'
-    )
+    assert sec_outputs[2].total_energies[0].contributions[0].name == 'custom'
     assert sec_outputs[2].total_energies[0].contributions[0].value.to(
         'kilojoule'
     ).magnitude == approx(3.0)
-    assert (
-        sec_outputs[2].total_energies[0].contributions[1].m_def.name
-        == 'EnergyContribution'  # 'KineticEnergy'
-    )
+    assert sec_outputs[2].total_energies[0].contributions[1].name == 'kinetic'
     assert sec_outputs[2].total_energies[0].contributions[1].value.to(
         'kilojoule'
     ).magnitude == approx(2.0)
-    assert (
-        sec_outputs[2].total_energies[0].contributions[2].m_def.name
-        == 'EnergyContribution'  # 'PotentialEnergy'
-    )
+    assert sec_outputs[2].total_energies[0].contributions[2].name == 'potential'
     assert sec_outputs[2].total_energies[0].contributions[2].value.to(
         'kilojoule'
     ).magnitude == approx(1.0)
@@ -141,10 +133,7 @@ def test_md(parser):
     assert sec_outputs[2].total_forces[0].value[11].to('newton').magnitude == approx(
         500.0
     )
-    assert (
-        sec_outputs[2].total_forces[0].contributions[0].m_def.name
-        == 'ForceContribution'  # 'CustomEnergy'
-    )
+    assert sec_outputs[2].total_forces[0].contributions[0].name == 'custom_forces'
     assert sec_outputs[2].total_forces[0].contributions[0].value[21].to(
         'newton'
     ).magnitude == approx(4.0)

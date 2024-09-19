@@ -61,24 +61,18 @@ class ParamEntry(ArchiveSection):
     )
 
 
-class OutputsEntry(ArchiveSection):
+class CustomProperty(
+    nomad_simulations.schema_packages.physical_property.PhysicalProperty
+):
     """
     Section describing a general type of calculation.
     """
 
-    name = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Name of the quantity.
-        """,
-    )
-
     value = Quantity(
-        type=np.dtype(np.float64),
+        type=np.float64,
         shape=[],
         description="""
-        Value of this contribution.
+        Value **magnitude** of the property. The unit is defined in the `unit` attribute.
         """,
     )
 
@@ -86,7 +80,7 @@ class OutputsEntry(ArchiveSection):
         type=str,
         shape=[],
         description="""
-        Unit of the parameter as a string.
+        Unit of the parameter as a string consistent with the UnitRegistry.pint module.
         """,
     )
 
@@ -94,7 +88,7 @@ class OutputsEntry(ArchiveSection):
         type=str,
         shape=[],
         description="""
-        Further description of the output.
+        Further description of the property.
         """,
     )
 
@@ -191,26 +185,6 @@ class ModelSystem(nomad_simulations.schema_packages.model_system.ModelSystem):
     )
 
 
-# class TotalEnergy(nomad_simulations.schema_packages.properties.TotalEnergy):
-#     x_h5md_contributions = SubSection(
-#         sub_section=EnergyEntry.m_def,
-#         description="""
-#         Contains other custom energy contributions that are not already defined.
-#         """,
-#         repeats=True,
-#     )
-
-
-# class TotalForce(nomad_simulations.schema_packages.properties.TotalForce):
-#     x_h5md_contributions = SubSection(
-#         sub_section=ForceEntry.m_def,
-#         description="""
-#         Contains other custom force contributions that are not already defined.
-#         """,
-#         repeats=True,
-#     )
-
-
 class Stress(nomad_simulations.schema_packages.physical_property.PhysicalProperty):
     """ """
 
@@ -232,7 +206,7 @@ class TrajectoryOutputs(nomad_simulations.schema_packages.outputs.TrajectoryOutp
     )
 
     x_h5md_custom_outputs = SubSection(
-        sub_section=OutputsEntry.m_def,
+        sub_section=CustomProperty.m_def,
         description="""
         Contains other generic custom outputs that are not already defined.
         """,
