@@ -17,11 +17,15 @@
 # limitations under the License.
 #
 
-import nomad_simulations
+from nomad_simulations.schema_packages import general, physical_property, outputs, model_system, atoms_state
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import Context, MEnum, Quantity, Section, SectionProxy, SubSection
+from nomad.parsing.file_parser.mapping_parser import MappingAnnotationModel
 
+from nomad.metainfo import Quantity, SchemaPackage
+
+m_package = SchemaPackage()
 
 class ParamEntry(ArchiveSection):
     """
@@ -61,82 +65,80 @@ class ParamEntry(ArchiveSection):
     )
 
 
-class CustomProperty(
-    nomad_simulations.schema_packages.physical_property.PhysicalProperty
-):
-    """
-    Section describing a general type of calculation.
-    """
+# class CustomProperty(physical_property.PhysicalProperty):
+#     """
+#     Section describing a general type of calculation.
+#     """
 
-    value = Quantity(
-        type=np.float64,
-        shape=[],
-        description="""
-        Value **magnitude** of the property. The unit is defined in the `unit` attribute.
-        """,
-    )
+#     value = Quantity(
+#         type=np.float64,
+#         shape=[],
+#         description="""
+#         Value **magnitude** of the property. The unit is defined in the `unit` attribute.
+#         """,
+#     )
 
-    unit = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Unit of the parameter as a string consistent with the UnitRegistry.pint module.
-        """,
-    )
+#     unit = Quantity(
+#         type=str,
+#         shape=[],
+#         description="""
+#         Unit of the parameter as a string consistent with the UnitRegistry.pint module.
+#         """,
+#     )
 
-    description = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Further description of the property.
-        """,
-    )
+#     description = Quantity(
+#         type=str,
+#         shape=[],
+#         description="""
+#         Further description of the property.
+#         """,
+#     )
 
 
-class EnergyEntry(ArchiveSection):
-    """
-    Section describing a general type of energy contribution.
-    """
+# class EnergyEntry(ArchiveSection):
+#     """
+#     Section describing a general type of energy contribution.
+#     """
 
-    name = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Name of the energy contribution.
-        """,
-    )
+#     name = Quantity(
+#         type=str,
+#         shape=[],
+#         description="""
+#         Name of the energy contribution.
+#         """,
+#     )
 
-    value = Quantity(
-        type=np.dtype(np.float64),
-        shape=[],
-        unit='joule',
-        description="""
-        Value of the energy contribution.
-        """,
-    )
+#     value = Quantity(
+#         type=np.dtype(np.float64),
+#         shape=[],
+#         unit='joule',
+#         description="""
+#         Value of the energy contribution.
+#         """,
+#     )
 
 
-class ForceEntry(ArchiveSection):
-    """
-    Section describing a general type of force contribution.
-    """
+# class ForceEntry(ArchiveSection):
+#     """
+#     Section describing a general type of force contribution.
+#     """
 
-    name = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Name of the force contribution.
-        """,
-    )
+#     name = Quantity(
+#         type=str,
+#         shape=[],
+#         description="""
+#         Name of the force contribution.
+#         """,
+#     )
 
-    value = Quantity(
-        type=np.dtype(np.float64),
-        shape=[],
-        unit='newton',
-        description="""
-        Value of the force contribution.
-        """,
-    )
+#     value = Quantity(
+#         type=np.dtype(np.float64),
+#         shape=[],
+#         unit='newton',
+#         description="""
+#         Value of the force contribution.
+#         """,
+#     )
 
 
 # class ForceCalculations(runschema.method.ForceCalculations):
@@ -168,11 +170,32 @@ class ForceEntry(ArchiveSection):
 #         repeats=True,
 #     )
 
+class AtomsState(atoms_state.AtomsState):
+    atoms_state.AtomsState.chemical_symbol.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.label')
 
-class ModelSystem(nomad_simulations.schema_packages.model_system.ModelSystem):
+
+class AtomicCell(model_system.AtomicCell):
+    model_system.AtomicCell.positions.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.positions')
+
+    model_system.AtomicCell.lattice_vectors.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.lattice_vectors')
+
+    model_system.AtomicCell.velocities.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.velocities')
+
+    # TODO length of positions in section data does not work
+    model_system.AtomicCell.n_atoms.m_annotations['hdf5'] = MappingAnnotationModel(mapper='length(particles.all.position.value.__value | [0])')
+
+    model_system.AtomicCell.atoms_state.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('to_species_labels', ['particles.all.species_label']))
+
+
+class ModelSystem(model_system.ModelSystem):
     """
     Model system used as an input for simulating the material.
     """
+
+    m_def = Section(
+        validate=False,
+        extends_base_section=True,
+    )
 
     custom_system_attributes = (
         SubSection(  # TODO should this be called parameters or attributes or what?
@@ -184,34 +207,47 @@ class ModelSystem(nomad_simulations.schema_packages.model_system.ModelSystem):
         )
     )
 
+    model_system.AtomicCell.m_def.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.@')
 
-class Stress(nomad_simulations.schema_packages.physical_property.PhysicalProperty):
-    """ """
-
-    value = Quantity(
-        type=np.dtype(np.float64),
-        unit='newton',
+    # TODO inconsistent? shape with original def
+    bond_list = Quantity(
+        type=np.int32,
+        shape=['*', '*'],
         description="""
+        List of pairs of atom indices corresponding to bonds (e.g., as defined by a force field)
+        within this atoms_group.
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
+    bond_list.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.bonds_list')
+
+# class Stress(physical_property.PhysicalProperty):
+#     """ """
+
+#     value = Quantity(
+#         type=np.dtype(np.float64),
+#         unit='newton',
+#         description="""
+#         """,
+#     )
+
+#     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+#         super().normalize(archive, logger)
 
 
-class TrajectoryOutputs(nomad_simulations.schema_packages.outputs.TrajectoryOutputs):
-    m_def = Section(
-        validate=False,
-        extends_base_section=True,
-    )
+# class TrajectoryOutputs(outputs.TrajectoryOutputs):
+#     m_def = Section(
+#         validate=False,
+#         extends_base_section=True,
+#     )
 
-    x_h5md_custom_outputs = SubSection(
-        sub_section=CustomProperty.m_def,
-        description="""
-        Contains other generic custom outputs that are not already defined.
-        """,
-        repeats=True,
-    )
+#     x_h5md_custom_outputs = SubSection(
+#         sub_section=CustomProperty.m_def,
+#         description="""
+#         Contains other generic custom outputs that are not already defined.
+#         """,
+#         repeats=True,
+#     )
 
 
 class Author(ArchiveSection):
@@ -227,32 +263,7 @@ class Author(ArchiveSection):
         """,
     )
 
-    email = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Author's email.
-        """,
-    )
-
-
-class H5MDCreator(nomad_simulations.schema_packages.general.Program):
-    """
-    Contains the specifications of the program.
-    """
-
-    m_def = Section(
-        validate=False,
-        extends_base_section=True,
-    )
-
-    name = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Specifies the name of the author who generated the h5md file.
-        """,
-    )
+    name.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.\"@name\"')
 
     email = Quantity(
         type=str,
@@ -262,24 +273,77 @@ class H5MDCreator(nomad_simulations.schema_packages.general.Program):
         """,
     )
 
+    email.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.\"@email\"')
 
-class Simulation(nomad_simulations.schema_packages.general.Simulation):
-    m_def = Section(
-        validate=False,
-        extends_base_section=True,
+
+# class H5MDCreator(general.Program):
+#     """
+#     Contains the specifications of the program.
+#     """
+
+#     m_def = Section(
+#         validate=False,
+#         extends_base_section=True,
+#     )
+
+#     name = Quantity(
+#         type=str,
+#         shape=[],
+#         description="""
+#         Specifies the name of the author who generated the h5md file.
+#         """,
+#     )
+
+#     email = Quantity(
+#         type=str,
+#         shape=[],
+#         description="""
+#         Author's email.
+#         """,
+#     )
+
+
+class Program(general.Program):
+    general.Program.name.m_annotations['hdf5'] = MappingAnnotationModel(
+        mapper='.\"@name\"',
     )
 
-    # TODO Not sure how we are dealing with versioning with H5MD-NOMAD
-    x_h5md_version = Quantity(
-        type=np.dtype(np.int32),
-        shape=[2],
-        description="""
-        Specifies the version of the h5md schema being followed.
-        """,
+    general.Program.version.m_annotations['hdf5'] = MappingAnnotationModel(
+        mapper='.\"@version\"',
     )
 
-    x_h5md_author = SubSection(sub_section=Author.m_def)
 
-    x_h5md_creator = SubSection(
-        sub_section=nomad_simulations.schema_packages.general.Program.m_def
-    )
+class Simulation(general.Simulation):
+    # m_def = Section(
+    #     validate=False,
+    #     extends_base_section=True,
+    # )
+
+    # # TODO Not sure how we are dealing with versioning with H5MD-NOMAD
+    # x_h5md_version = Quantity(
+    #     type=np.dtype(np.int32),
+    #     shape=[2],
+    #     description="""
+    #     Specifies the version of the h5md schema being followed.
+    #     """,
+    # )
+    # x_h5md_version.m_annotations['hdf5'] = MappingAnnotationModel(
+    #     mapper='h5md.\"@version\"',
+    # )
+
+    # x_h5md_author = SubSection(sub_section=Author.m_def)
+
+    # x_h5md_author.m_annotations['hdf5'] = MappingAnnotationModel(mapper='h5md.author')
+
+    # x_h5md_creator = SubSection(sub_section=general.Program.m_def)
+
+    # x_h5md_creator.m_annotations['hdf5'] = MappingAnnotationModel(mapper='h5md.creator')
+
+    # general.Simulation.program.m_annotations['hdf5'] = MappingAnnotationModel(mapper='h5md.program')
+
+    general.Simulation.model_system.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('to_systems_data', ['@']))
+
+Simulation.m_def.m_annotations['hdf5'] = MappingAnnotationModel(mapper='@')
+
+
+m_package.__init_metainfo__()
