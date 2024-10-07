@@ -314,32 +314,32 @@ class Program(general.Program):
 
 
 class Simulation(general.Simulation):
-    # m_def = Section(
-    #     validate=False,
-    #     extends_base_section=True,
-    # )
+    m_def = Section(
+        validate=False,
+        extends_base_section=True,
+    )
 
-    # # TODO Not sure how we are dealing with versioning with H5MD-NOMAD
-    # x_h5md_version = Quantity(
-    #     type=np.dtype(np.int32),
-    #     shape=[2],
-    #     description="""
-    #     Specifies the version of the h5md schema being followed.
-    #     """,
-    # )
-    # x_h5md_version.m_annotations['hdf5'] = MappingAnnotationModel(
-    #     mapper='h5md.\"@version\"',
-    # )
+    # TODO Not sure how we are dealing with versioning with H5MD-NOMAD
+    x_h5md_version = Quantity(
+        type=np.dtype(np.int32),
+        shape=[2],
+        description="""
+        Specifies the version of the h5md schema being followed.
+        """,
+    )
+    x_h5md_version.m_annotations['hdf5'] = MappingAnnotationModel(
+        mapper='h5md.\"@version\"',
+    )
 
-    # x_h5md_author = SubSection(sub_section=Author.m_def)
+    x_h5md_author = SubSection(sub_section=Author.m_def)
 
-    # x_h5md_author.m_annotations['hdf5'] = MappingAnnotationModel(mapper='h5md.author')
+    x_h5md_author.m_annotations['hdf5'] = MappingAnnotationModel(mapper='h5md.author')
 
-    # x_h5md_creator = SubSection(sub_section=general.Program.m_def)
+    x_h5md_creator = SubSection(sub_section=general.Program.m_def)
 
-    # x_h5md_creator.m_annotations['hdf5'] = MappingAnnotationModel(mapper='h5md.creator')
+    x_h5md_creator.m_annotations['hdf5'] = MappingAnnotationModel(mapper='h5md.creator')
 
-    # general.Simulation.program.m_annotations['hdf5'] = MappingAnnotationModel(mapper='h5md.program')
+    general.Simulation.program.m_annotations['hdf5'] = MappingAnnotationModel(mapper='h5md.program')
 
     general.Simulation.model_system.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('to_systems_data', ['@']))
 
