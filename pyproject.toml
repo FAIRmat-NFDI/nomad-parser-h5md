@@ -25,7 +25,7 @@ maintainers = [
     { name = "Joseph Rudzinski", email = "joseph.rudzinski@physik.hu-berlin.de" },
 ]
 license = { file = "LICENSE" }
-dependencies = ["nomad-lab@file:///home/jfrudzinski/work/soft/nomad_2024", "nomad-simulations>=0.0.3"]
+dependencies = ["nomad-simulations"]
 
 [project.urls]
 Repository = "https://github.com/FAIRmat-NFDI/nomad-parser-h5md"

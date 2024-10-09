@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-from nomad_simulations.schema_packages import general, physical_property, outputs, model_system, atoms_state
+from nomad_simulations.schema_packages import general, physical_property, outputs, model_system, atoms_state, properties
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import Context, MEnum, Quantity, Section, SectionProxy, SubSection
@@ -170,6 +170,27 @@ class ParamEntry(ArchiveSection):
 #         repeats=True,
 #     )
 
+class EnergyContribution(properties.energies.EnergyContribution):
+    
+    properties.energies.EnergyContribution.name.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.name')
+
+    # value annotation defined in TotalEnergy.value since they refer to the same quantity
+    # in this case, we make sure that return the corresponding value returned by
+    # the get_energy_contributions functions in the TotalEnergy.contribitions annotation
+
+class TotalEnergy(properties.TotalEnergy):
+
+    properties.energies.TotalEnergy.value.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_total_energy', ['.@']))
+
+    properties.TotalEnergy.contributions.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_energy_contributions', ['.@']))
+
+
+
+class Outputs(outputs.Outputs):
+
+    outputs.Outputs.total_energies.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.@')
+
+
 class AtomsState(atoms_state.AtomsState):
     atoms_state.AtomsState.chemical_symbol.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.label')
 
@@ -185,6 +206,8 @@ class AtomicCell(model_system.AtomicCell):
     model_system.AtomicCell.n_atoms.m_annotations['hdf5'] = MappingAnnotationModel(mapper='length(particles.all.position.value.__value | [0])')
 
     model_system.AtomicCell.atoms_state.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('to_species_labels', ['particles.all.species_label']))
+
+    model_system.AtomicCell.periodic_boundary_conditions.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.boundary')
 
 
 class ModelSystem(model_system.ModelSystem):
@@ -207,19 +230,13 @@ class ModelSystem(model_system.ModelSystem):
         )
     )
 
-    model_system.AtomicCell.m_def.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.@')
+    model_system.AtomicCell.m_def.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_system_data', ['.@']))
 
     # TODO inconsistent? shape with original def
-    bond_list = Quantity(
-        type=np.int32,
-        shape=['*', '*'],
-        description="""
-        List of pairs of atom indices corresponding to bonds (e.g., as defined by a force field)
-        within this atoms_group.
-        """,
-    )
+    # model_system.ModelSystem.bond_list.m_annotations['hdf5'] = MappingAnnotationModel(mapper='connectivity.bonds')
 
-    bond_list.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.bonds_list')
+    model_system.ModelSystem.dimensionality.m_annotations['hdf5'] = MappingAnnotationModel(mapper='particles.all.box.@dimension')
+
 
 # class Stress(physical_property.PhysicalProperty):
 #     """ """
@@ -341,7 +358,10 @@ class Simulation(general.Simulation):
 
     general.Simulation.program.m_annotations['hdf5'] = MappingAnnotationModel(mapper='h5md.program')
 
-    general.Simulation.model_system.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('to_systems_data', ['@']))
+    general.Simulation.model_system.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_system_steps', ['particles.all.position']))
+
+    general.Simulation.outputs.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_output_steps', ['observables']))
+
 
 Simulation.m_def.m_annotations['hdf5'] = MappingAnnotationModel(mapper='@')
 
