@@ -173,22 +173,40 @@ class ParamEntry(ArchiveSection):
 class EnergyContribution(properties.energies.EnergyContribution):
     
     properties.energies.EnergyContribution.name.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.name')
+    pass
 
     # value annotation defined in TotalEnergy.value since they refer to the same quantity
-    # in this case, we make sure that return the corresponding value returned by
-    # the get_energy_contributions functions in the TotalEnergy.contribitions annotation
+    # in this case, we make sure to return the corresponding value from
+    # the get_contributions function in the TotalEnergy.contributions annotation
 
 class TotalEnergy(properties.TotalEnergy):
 
-    properties.energies.TotalEnergy.value.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_total_energy', ['.@']))
+    properties.TotalEnergy.value.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_output_data', ['.@'], dict(path='observables.energies.total')))
 
-    properties.TotalEnergy.contributions.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_energy_contributions', ['.@']))
+    properties.energies.TotalEnergy.contributions.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_contributions', ['.@'], dict(path='observables.energies', exclude=['total'])))
 
 
+class ForceContribution(properties.forces.ForceContribution):
+    # this is not even necessary as both force and energy name use the same def
+    # it is thus important that the corresponding source data contain name
+    # properties.forces.ForceContribution.name.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.name')
+
+    # value annotation defined in TotalForce.value since they refer to the same quantity
+    # in this case, we make sure to return the corresponding value from
+    # the get_contributions function in the TotalForce.contributions annotation
+    pass
+
+class TotalForce(properties.TotalForce):
+
+    properties.forces.TotalForce.value.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_output_data', ['.@'], dict(path='particles.all.force', )))
+
+    properties.forces.TotalForce.contributions.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_contributions', ['.@'], dict(path='observables', include=['custom_forces'])))
 
 class Outputs(outputs.Outputs):
 
     outputs.Outputs.total_energies.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.@')
+
+    outputs.Outputs.total_forces.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.@')
 
 
 class AtomsState(atoms_state.AtomsState):

@@ -22,6 +22,13 @@ class H5MDH5Parser(HDF5Parser):
             value = value * factor
         return value
 
+    def get_source(self, parent: Dict[str, Any], path: str):
+        path_segments = path.split('.', 1)
+        source = parent.get(path_segments[0], {})
+        if len(path_segments) == 1:
+            return source
+        return self.get_source(source, path_segments[1])
+
     def get_system_steps(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
         steps = source.get('step')
         times = self.get_value('time', source)
@@ -40,14 +47,18 @@ class H5MDH5Parser(HDF5Parser):
         return step_data
 
     def get_system_data(self, source: Dict[str, Any]) -> Dict[str, Any]:
-        particles = self.data.get('particles', {}).get('all', {})
-        source_data = [
-            ('positions', particles.get('position')),
-            ('lattice_vectors', particles.get('box', {}).get('edges')),
-            ('velocities', particles.get('velocity'))
+        particles = self.data.get('particles', {}).get('all')
+        if particles is None:
+            return {}
+
+        source_paths = [
+            ('positions', 'position'),
+            ('lattice_vectors', 'box.edges'),
+            ('velocities', 'velocity'),
         ]
         system_data = {}
-        for name, data in source_data:
+        for name, path in source_paths:
+            data = self.get_source(particles, path)
             if data is None:
                 continue
             step_data = self.get_step_data(data, source.get('step'))
@@ -65,68 +76,43 @@ class H5MDH5Parser(HDF5Parser):
 
     def get_output_steps(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
 
-        def get_observable(dct: Dict[str, Any], name: str='') -> List[Dict[str, Any]]:
+        def get_observable(dct: Dict[str, Any]) -> List[Dict[str, Any]]:
             for key, val in dct.items():
                 if key == 'step':
                     times = self.get_value('time', dct)
-                    return [dict(name=name, step=step, time=times[n]) for n, step in enumerate(val)]
+                    return [dict(step=step, time=times[n]) for n, step in enumerate(val)]
                 if isinstance(val, dict):
-                    return get_observable(val, key)
+                    return get_observable(val)
 
             return []
 
         steps = get_observable(source)
         return steps
 
-    def get_energy_contributions(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
-        energies = self.data.get('observables', {}).get('energies')
-        contributions = [dict(name=name) for name in ['kinetic', 'potential', 'custom']]
-        for contribution in contributions:
-            data = energies.get(contribution['name'])
-            if data is None:
-                contributions.remove(contribution)
+    def get_contributions(self, source: Dict[str, Any], **kwargs) -> List[Dict[str, Any]]:
+        if kwargs.get('path') is None or source.get('step') is None:
+            return []
+
+        source_data = self.get_source(self.data, kwargs['path'])
+        include = kwargs.get('include')
+        exclude = kwargs.get('exclude')
+        contributions = []
+        for key, val in source_data.items():
+            if include and key not in include or exclude and key in exclude:
                 continue
-            if source.get('step') is not None:
-                contribution.update(self.get_step_data(data, source.get('step')))
+            step_data = self.get_step_data(val, source['step'])
+            contributions.append({'name': key, **step_data})
         return contributions
 
-    def get_total_energy(self, source: Dict[str, Any]) -> pint.Quantity:
+    def get_output_data(self, source: Dict[str, Any], **kwargs) -> pint.Quantity:
         if source.get('value') is not None:
             return source['value']
-        if source.get('step') is None:
+        if source.get('step') is None or kwargs.get('path') is None:
             return
 
-        total = self.data.get('observables', {}).get('energies', {}).get('total')
-        if total is None:
-            return
+        source_data = self.get_source(self.data, kwargs['path'])
+        return self.get_step_data(source_data, source['step']).get('value')
 
-        return self.get_step_data(total, source.get('step')).get('value')
-
-    def get_output_data(self, source: Dict[str, Any]) -> Dict[str, Any]:
-        if not source.get('step'):
-            return {}
-
-        observables = self.data.get('observables', {})
-        energies = observables.get('energies', {})
-        source_data = [
-            ('total_energy', energies.get('total')),
-        ]
-        output_data = {}
-        for name, data in source_data:
-            if data is None:
-                continue
-            datas = data if isinstance(data, list) else [data]
-            for step_data in [self.get_step_data(d, source.get('step')) for d in datas]:
-                output_data.setdefault('time', step_data['time'])
-                output_data.setdefault(name, [])
-                if step_data['time'] == output_data['time']:
-                    output_data[name].append(step_data['value'])
-            if len(output_data[name]) == 1:
-                output_data[name] = output_data[name][0]
-            elif output_data[name] == 0:
-                output_data[name] = None
-
-        return output_data
 
 class H5MDParser(MDParser):
     def __init__(self) -> None:
@@ -152,3 +138,6 @@ class H5MDParser(MDParser):
         # assign simulation to archive data
         self.archive.data = self.simulation_parser.data_object
 
+        self.h5_parser.close()
+
+        self.simulation_parser.close()
