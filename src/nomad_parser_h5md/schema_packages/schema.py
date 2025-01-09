@@ -17,15 +17,20 @@
 # limitations under the License.
 #
 
-from nomad_simulations.schema_packages import general, physical_property, outputs, model_system, atoms_state, properties
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import Context, MEnum, Quantity, Section, SectionProxy, SubSection
-from nomad.parsing.file_parser.mapping_parser import MappingAnnotationModel
-
-from nomad.metainfo import Quantity, SchemaPackage
+from nomad.datamodel.metainfo.annotations import Mapper as MapperAnnotation
+from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection
+from nomad_simulations.schema_packages import (
+    atoms_state,
+    general,
+    model_system,
+    outputs,
+    properties,
+)
 
 m_package = SchemaPackage()
+
 
 class ParamEntry(ArchiveSection):
     """
@@ -170,62 +175,112 @@ class ParamEntry(ArchiveSection):
 #         repeats=True,
 #     )
 
+
 class EnergyContribution(properties.energies.EnergyContribution):
-    
-    properties.energies.EnergyContribution.name.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.name')
+    properties.energies.EnergyContribution.name.m_annotations.setdefault('mapping', {})[
+        'hdf5'
+    ] = MapperAnnotation(mapper='.name')
     pass
 
     # value annotation defined in TotalEnergy.value since they refer to the same quantity
     # in this case, we make sure to return the corresponding value from
     # the get_contributions function in the TotalEnergy.contributions annotation
 
+
 class TotalEnergy(properties.TotalEnergy):
+    properties.TotalEnergy.value.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(
+            mapper=('get_output_data', ['.@'], dict(path='observables.energies.total'))
+        )
+    )
 
-    properties.TotalEnergy.value.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_output_data', ['.@'], dict(path='observables.energies.total')))
-
-    properties.energies.TotalEnergy.contributions.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_contributions', ['.@'], dict(path='observables.energies', exclude=['total'])))
+    properties.energies.TotalEnergy.contributions.m_annotations.setdefault(
+        'mapping', {}
+    )['hdf5'] = MapperAnnotation(
+        mapper=(
+            'get_contributions',
+            ['.@'],
+            dict(path='observables.energies', exclude=['total']),
+        )
+    )
 
 
 class ForceContribution(properties.forces.ForceContribution):
     # this is not even necessary as both force and energy name use the same def
     # it is thus important that the corresponding source data contain name
-    # properties.forces.ForceContribution.name.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.name')
+    # properties.forces.ForceContribution.name.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(mapper='.name')
 
     # value annotation defined in TotalForce.value since they refer to the same quantity
     # in this case, we make sure to return the corresponding value from
     # the get_contributions function in the TotalForce.contributions annotation
     pass
 
+
 class TotalForce(properties.TotalForce):
+    properties.forces.TotalForce.value.m_annotations.setdefault('mapping', {})[
+        'hdf5'
+    ] = MapperAnnotation(
+        mapper=(
+            'get_output_data',
+            ['.@'],
+            dict(
+                path='particles.all.force',
+            ),
+        )
+    )
 
-    properties.forces.TotalForce.value.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_output_data', ['.@'], dict(path='particles.all.force', )))
+    properties.forces.TotalForce.contributions.m_annotations.setdefault('mapping', {})[
+        'hdf5'
+    ] = MapperAnnotation(
+        mapper=(
+            'get_contributions',
+            ['.@'],
+            dict(path='observables', include=['custom_forces']),
+        )
+    )
 
-    properties.forces.TotalForce.contributions.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_contributions', ['.@'], dict(path='observables', include=['custom_forces'])))
 
 class Outputs(outputs.Outputs):
+    outputs.Outputs.total_energies.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(mapper='.@')
+    )
 
-    outputs.Outputs.total_energies.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.@')
-
-    outputs.Outputs.total_forces.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.@')
+    outputs.Outputs.total_forces.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(mapper='.@')
+    )
 
 
 class AtomsState(atoms_state.AtomsState):
-    atoms_state.AtomsState.chemical_symbol.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.label')
+    atoms_state.AtomsState.chemical_symbol.m_annotations.setdefault('mapping', {})[
+        'hdf5'
+    ] = MapperAnnotation(mapper='.label')
 
 
 class AtomicCell(model_system.AtomicCell):
-    model_system.AtomicCell.positions.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.positions')
+    model_system.AtomicCell.positions.m_annotations.setdefault('mapping', {})[
+        'hdf5'
+    ] = MapperAnnotation(mapper='.positions')
 
-    model_system.AtomicCell.lattice_vectors.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.lattice_vectors')
+    model_system.AtomicCell.lattice_vectors.m_annotations.setdefault('mapping', {})[
+        'hdf5'
+    ] = MapperAnnotation(mapper='.lattice_vectors')
 
-    model_system.AtomicCell.velocities.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.velocities')
+    model_system.AtomicCell.velocities.m_annotations.setdefault('mapping', {})[
+        'hdf5'
+    ] = MapperAnnotation(mapper='.velocities')
 
     # TODO length of positions in section data does not work
-    model_system.AtomicCell.n_atoms.m_annotations['hdf5'] = MappingAnnotationModel(mapper='length(particles.all.position.value.__value | [0])')
+    model_system.AtomicCell.n_atoms.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(mapper='length(particles.all.position.value.__value | [0])')
+    )
 
-    model_system.AtomicCell.atoms_state.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('to_species_labels', ['particles.all.species_label']))
+    model_system.AtomicCell.atoms_state.m_annotations.setdefault('mapping', {})[
+        'hdf5'
+    ] = MapperAnnotation(mapper=('to_species_labels', ['particles.all.species_label']))
 
-    model_system.AtomicCell.periodic_boundary_conditions.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.boundary')
+    model_system.AtomicCell.periodic_boundary_conditions.m_annotations.setdefault(
+        'mapping', {}
+    )['hdf5'] = MapperAnnotation(mapper='.boundary')
 
 
 class ModelSystem(model_system.ModelSystem):
@@ -248,12 +303,16 @@ class ModelSystem(model_system.ModelSystem):
         )
     )
 
-    model_system.AtomicCell.m_def.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_system_data', ['.@']))
+    model_system.AtomicCell.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(mapper=('get_system_data', ['.@']))
+    )
 
     # TODO inconsistent? shape with original def
-    # model_system.ModelSystem.bond_list.m_annotations['hdf5'] = MappingAnnotationModel(mapper='connectivity.bonds')
+    # model_system.ModelSystem.bond_list.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(mapper='connectivity.bonds')
 
-    model_system.ModelSystem.dimensionality.m_annotations['hdf5'] = MappingAnnotationModel(mapper='particles.all.box.@dimension')
+    model_system.ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})[
+        'hdf5'
+    ] = MapperAnnotation(mapper='particles.all.box.@dimension')
 
 
 # class Stress(physical_property.PhysicalProperty):
@@ -298,7 +357,9 @@ class Author(ArchiveSection):
         """,
     )
 
-    name.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.\"@name\"')
+    name.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+        mapper='."@name"'
+    )
 
     email = Quantity(
         type=str,
@@ -308,7 +369,9 @@ class Author(ArchiveSection):
         """,
     )
 
-    email.m_annotations['hdf5'] = MappingAnnotationModel(mapper='.\"@email\"')
+    email.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+        mapper='."@email"'
+    )
 
 
 # class H5MDCreator(general.Program):
@@ -339,12 +402,16 @@ class Author(ArchiveSection):
 
 
 class Program(general.Program):
-    general.Program.name.m_annotations['hdf5'] = MappingAnnotationModel(
-        mapper='.\"@name\"',
+    general.Program.name.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(
+            mapper='."@name"',
+        )
     )
 
-    general.Program.version.m_annotations['hdf5'] = MappingAnnotationModel(
-        mapper='.\"@version\"',
+    general.Program.version.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(
+            mapper='."@version"',
+        )
     )
 
 
@@ -362,26 +429,38 @@ class Simulation(general.Simulation):
         Specifies the version of the h5md schema being followed.
         """,
     )
-    x_h5md_version.m_annotations['hdf5'] = MappingAnnotationModel(
-        mapper='h5md.\"@version\"',
+    x_h5md_version.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+        mapper='h5md."@version"',
     )
 
     x_h5md_author = SubSection(sub_section=Author.m_def)
 
-    x_h5md_author.m_annotations['hdf5'] = MappingAnnotationModel(mapper='h5md.author')
+    x_h5md_author.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+        mapper='h5md.author'
+    )
 
     x_h5md_creator = SubSection(sub_section=general.Program.m_def)
 
-    x_h5md_creator.m_annotations['hdf5'] = MappingAnnotationModel(mapper='h5md.creator')
+    x_h5md_creator.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+        mapper='h5md.creator'
+    )
 
-    general.Simulation.program.m_annotations['hdf5'] = MappingAnnotationModel(mapper='h5md.program')
+    general.Simulation.program.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(mapper='h5md.program')
+    )
 
-    general.Simulation.model_system.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_system_steps', ['particles.all.position']))
+    general.Simulation.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(mapper=('get_system_steps', ['particles.all.position']))
+    )
 
-    general.Simulation.outputs.m_annotations['hdf5'] = MappingAnnotationModel(mapper=('get_output_steps', ['observables']))
+    general.Simulation.outputs.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(mapper=('get_output_steps', ['observables']))
+    )
 
 
-Simulation.m_def.m_annotations['hdf5'] = MappingAnnotationModel(mapper='@')
+Simulation.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+    mapper='@'
+)
 
 
 m_package.__init_metainfo__()
