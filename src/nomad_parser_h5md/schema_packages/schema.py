@@ -28,6 +28,7 @@ from nomad_simulations.schema_packages import (
     outputs,
     properties,
 )
+from nomad_simulations.schema_packages import physical_property
 
 m_package = SchemaPackage()
 
@@ -70,80 +71,34 @@ class ParamEntry(ArchiveSection):
     )
 
 
-# class CustomProperty(physical_property.PhysicalProperty):
-#     """
-#     Section describing a general type of calculation.
-#     """
+class CustomProperty(physical_property.PhysicalProperty):
+    """
+    Section describing a general type of calculation.
+    """
 
-#     value = Quantity(
-#         type=np.float64,
-#         shape=[],
-#         description="""
-#         Value **magnitude** of the property. The unit is defined in the `unit` attribute.
-#         """,
-#     )
+    value = Quantity(
+        type=np.float64,
+        shape=[],
+        description="""
+        Value **magnitude** of the property. The unit is defined in the `unit` attribute.
+        """,
+    )
 
-#     unit = Quantity(
-#         type=str,
-#         shape=[],
-#         description="""
-#         Unit of the parameter as a string consistent with the UnitRegistry.pint module.
-#         """,
-#     )
+    unit = Quantity(
+        type=str,
+        shape=[],
+        description="""
+        Unit of the parameter as a string consistent with the UnitRegistry.pint module.
+        """,
+    )
 
-#     description = Quantity(
-#         type=str,
-#         shape=[],
-#         description="""
-#         Further description of the property.
-#         """,
-#     )
-
-
-# class EnergyEntry(ArchiveSection):
-#     """
-#     Section describing a general type of energy contribution.
-#     """
-
-#     name = Quantity(
-#         type=str,
-#         shape=[],
-#         description="""
-#         Name of the energy contribution.
-#         """,
-#     )
-
-#     value = Quantity(
-#         type=np.dtype(np.float64),
-#         shape=[],
-#         unit='joule',
-#         description="""
-#         Value of the energy contribution.
-#         """,
-#     )
-
-
-# class ForceEntry(ArchiveSection):
-#     """
-#     Section describing a general type of force contribution.
-#     """
-
-#     name = Quantity(
-#         type=str,
-#         shape=[],
-#         description="""
-#         Name of the force contribution.
-#         """,
-#     )
-
-#     value = Quantity(
-#         type=np.dtype(np.float64),
-#         shape=[],
-#         unit='newton',
-#         description="""
-#         Value of the force contribution.
-#         """,
-#     )
+    description = Quantity(
+        type=str,
+        shape=[],
+        description="""
+        Further description of the property.
+        """,
+    )
 
 
 # class ForceCalculations(runschema.method.ForceCalculations):
@@ -303,45 +258,31 @@ class ModelSystem(model_system.ModelSystem):
         )
     )
 
-    model_system.AtomicCell.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
-        MapperAnnotation(mapper=('get_system_data', ['.@']))
-    )
+    # model_system.AtomicCell.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    #     MapperAnnotation(mapper=('get_system_data', ['.@']))
+    # )
 
     # TODO inconsistent? shape with original def
     # model_system.ModelSystem.bond_list.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(mapper='connectivity.bonds')
 
-    model_system.ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})[
-        'hdf5'
-    ] = MapperAnnotation(mapper='particles.all.box.@dimension')
+    # model_system.ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})[
+    #     'hdf5'
+    # ] = MapperAnnotation(mapper='particles.all.box.@dimension')
 
 
-# class Stress(physical_property.PhysicalProperty):
-#     """ """
+class TrajectoryOutputs(outputs.TrajectoryOutputs):
+    m_def = Section(
+        validate=False,
+        extends_base_section=True,
+    )
 
-#     value = Quantity(
-#         type=np.dtype(np.float64),
-#         unit='newton',
-#         description="""
-#         """,
-#     )
-
-#     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-#         super().normalize(archive, logger)
-
-
-# class TrajectoryOutputs(outputs.TrajectoryOutputs):
-#     m_def = Section(
-#         validate=False,
-#         extends_base_section=True,
-#     )
-
-#     x_h5md_custom_outputs = SubSection(
-#         sub_section=CustomProperty.m_def,
-#         description="""
-#         Contains other generic custom outputs that are not already defined.
-#         """,
-#         repeats=True,
-#     )
+    x_h5md_custom_outputs = SubSection(
+        sub_section=CustomProperty.m_def,
+        description="""
+        Contains other generic custom outputs that are not already defined.
+        """,
+        repeats=True,
+    )
 
 
 class Author(ArchiveSection):

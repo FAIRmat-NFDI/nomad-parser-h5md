@@ -47,9 +47,8 @@ from nomad_parser_h5md.schema_packages.schema import (
     TrajectoryOutputs,
     CustomProperty,
     ParamEntry,
-    ForceEntry,
-    EnergyEntry,
-    Stress,
+    ForceContribution,
+    EnergyContribution,
 )
 
 configuration = config.get_plugin_entry_point(
