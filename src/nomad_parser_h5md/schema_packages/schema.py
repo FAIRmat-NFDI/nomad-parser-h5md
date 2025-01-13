@@ -245,7 +245,7 @@ class ModelSystem(model_system.ModelSystem):
 
     m_def = Section(
         validate=False,
-        extends_base_section=True,
+        # extends_base_section=True,
     )
 
     custom_system_attributes = (
@@ -273,10 +273,10 @@ class ModelSystem(model_system.ModelSystem):
 class TrajectoryOutputs(outputs.TrajectoryOutputs):
     m_def = Section(
         validate=False,
-        extends_base_section=True,
+        # extends_base_section=True,
     )
 
-    x_h5md_custom_outputs = SubSection(
+    custom_outputs = SubSection(
         sub_section=CustomProperty.m_def,
         description="""
         Contains other generic custom outputs that are not already defined.
@@ -359,7 +359,7 @@ class Program(general.Program):
 class Simulation(general.Simulation):
     m_def = Section(
         validate=False,
-        extends_base_section=True,
+        # extends_base_section=True,
     )
 
     # TODO Not sure how we are dealing with versioning with H5MD-NOMAD

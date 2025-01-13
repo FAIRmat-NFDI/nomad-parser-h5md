@@ -799,7 +799,7 @@ class H5MDParser(MDParser):
                 simulation.outputs.append(output)
 
             for output_entry in data_h5md['x_h5md_custom_calculations']:
-                output.x_h5md_custom_outputs.append(output_entry)
+                output.custom_outputs.append(output_entry)
             if (
                 len(output.total_energies) == 0
                 and data_h5md['x_h5md_energy_contributions']
