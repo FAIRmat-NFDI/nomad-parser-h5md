@@ -1,3 +1,3 @@
 data:
-  m_def: nomad_parser_h5md.schema_packages.schema_package.NewSchemaPackage
+  m_def: nomad_parser_h5md.schema_packages.schema_package.H5MDSchemaPackage
   name: Markus
