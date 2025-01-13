@@ -160,49 +160,57 @@ class TotalEnergy(properties.TotalEnergy):
     )
 
 
-class ForceContribution(properties.forces.ForceContribution):
-    # this is not even necessary as both force and energy name use the same def
-    # it is thus important that the corresponding source data contain name
-    # properties.forces.ForceContribution.name.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(mapper='.name')
-
-    # value annotation defined in TotalForce.value since they refer to the same quantity
-    # in this case, we make sure to return the corresponding value from
-    # the get_contributions function in the TotalForce.contributions annotation
-    pass
-
-
-class TotalForce(properties.TotalForce):
-    properties.forces.TotalForce.value.m_annotations.setdefault('mapping', {})[
-        'hdf5'
-    ] = MapperAnnotation(
-        mapper=(
-            'get_output_data',
-            ['.@'],
-            dict(
-                path='particles.all.force',
-            ),
-        )
-    )
-
-    properties.forces.TotalForce.contributions.m_annotations.setdefault('mapping', {})[
-        'hdf5'
-    ] = MapperAnnotation(
-        mapper=(
-            'get_contributions',
-            ['.@'],
-            dict(path='observables', include=['custom_forces']),
+class Temperature(properties.Temperature):
+    properties.Temperature.value.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(
+            mapper=('get_output_data', ['.@'], dict(path='observables.temperatures'))
         )
     )
 
 
-class Outputs(outputs.Outputs):
-    outputs.Outputs.total_energies.m_annotations.setdefault('mapping', {})['hdf5'] = (
-        MapperAnnotation(mapper='.@')
-    )
+# class ForceContribution(properties.forces.ForceContribution):
+#     # this is not even necessary as both force and energy name use the same def
+#     # it is thus important that the corresponding source data contain name
+#     # properties.forces.ForceContribution.name.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(mapper='.name')
 
-    outputs.Outputs.total_forces.m_annotations.setdefault('mapping', {})['hdf5'] = (
-        MapperAnnotation(mapper='.@')
-    )
+#     # value annotation defined in TotalForce.value since they refer to the same quantity
+#     # in this case, we make sure to return the corresponding value from
+#     # the get_contributions function in the TotalForce.contributions annotation
+#     pass
+
+
+# class TotalForce(properties.TotalForce):
+#     properties.forces.TotalForce.value.m_annotations.setdefault('mapping', {})[
+#         'hdf5'
+#     ] = MapperAnnotation(
+#         mapper=(
+#             'get_output_data',
+#             ['.@'],
+#             dict(
+#                 path='particles.all.force',
+#             ),
+#         )
+#     )
+
+#     properties.forces.TotalForce.contributions.m_annotations.setdefault('mapping', {})[
+#         'hdf5'
+#     ] = MapperAnnotation(
+#         mapper=(
+#             'get_contributions',
+#             ['.@'],
+#             dict(path='observables', include=['custom_forces']),
+#         )
+#     )
+
+
+# class Outputs(outputs.Outputs):
+#     outputs.Outputs.total_energies.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#         MapperAnnotation(mapper='.@')
+#     )
+
+# outputs.Outputs.total_forces.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(mapper='.@')
+# )
 
 
 class AtomsState(atoms_state.AtomsState):
@@ -258,16 +266,18 @@ class ModelSystem(model_system.ModelSystem):
         )
     )
 
-    # model_system.AtomicCell.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    #     MapperAnnotation(mapper=('get_system_data', ['.@']))
-    # )
+    model_system.AtomicCell.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(mapper=('get_system_data', ['.@']))
+    )
 
     # TODO inconsistent? shape with original def
-    # model_system.ModelSystem.bond_list.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(mapper='connectivity.bonds')
+    model_system.ModelSystem.bond_list.m_annotations.setdefault('mapping', {})[
+        'hdf5'
+    ] = MapperAnnotation(mapper='connectivity.bonds')
 
-    # model_system.ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})[
-    #     'hdf5'
-    # ] = MapperAnnotation(mapper='particles.all.box.@dimension')
+    model_system.ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})[
+        'hdf5'
+    ] = MapperAnnotation(mapper=r'particles.all.box."@dimension"')
 
 
 class TrajectoryOutputs(outputs.TrajectoryOutputs):
@@ -275,6 +285,14 @@ class TrajectoryOutputs(outputs.TrajectoryOutputs):
         validate=False,
         # extends_base_section=True,
     )
+
+    outputs.TrajectoryOutputs.total_energies.m_annotations.setdefault('mapping', {})[
+        'hdf5'
+    ] = MapperAnnotation(mapper='.@')
+
+    outputs.TrajectoryOutputs.temperatures.m_annotations.setdefault('mapping', {})[
+        'hdf5'
+    ] = MapperAnnotation(mapper='.@')
 
     custom_outputs = SubSection(
         sub_section=CustomProperty.m_def,

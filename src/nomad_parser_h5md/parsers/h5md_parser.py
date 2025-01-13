@@ -11,7 +11,7 @@ class H5MDH5Parser(HDF5Parser):
     trajectory_steps: List[int] = []
 
     def get_value(self, name: str, dct: Dict[str, Any]) -> Any:
-        value = dct.get(name,  {}).get(self.value_key)
+        value = dct.get(name, {}).get(self.value_key)
         if value is None:
             return
         unit = dct.get(name, {}).get(f'{self.attribute_prefix}unit')
@@ -32,7 +32,11 @@ class H5MDH5Parser(HDF5Parser):
     def get_system_steps(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
         steps = source.get('step')
         times = self.get_value('time', source)
-        return [dict(step=step, time=times[n]) for n, step in enumerate(steps) if step in self.trajectory_steps]
+        return [
+            dict(step=step, time=times[n])
+            for n, step in enumerate(steps)
+            if step in self.trajectory_steps
+        ]
 
     def get_step_data(self, data: Dict[str, Any], step: int) -> Dict[str, Any]:
         step_data = {}
@@ -69,18 +73,20 @@ class H5MDH5Parser(HDF5Parser):
                 system_data[name] = step_data['value']
         box = particles.get('box', {})
         system_data['boundary'] = box.get(f'{self.attribute_prefix}boundary')
+
         return system_data
 
     def to_species_labels(self, source: List[str]) -> List[Dict[str, Any]]:
         return [{'label': s} for s in source]
 
     def get_output_steps(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
-
         def get_observable(dct: Dict[str, Any]) -> List[Dict[str, Any]]:
             for key, val in dct.items():
                 if key == 'step':
                     times = self.get_value('time', dct)
-                    return [dict(step=step, time=times[n]) for n, step in enumerate(val)]
+                    return [
+                        dict(step=step, time=times[n]) for n, step in enumerate(val)
+                    ]
                 if isinstance(val, dict):
                     return get_observable(val)
 
@@ -89,7 +95,9 @@ class H5MDH5Parser(HDF5Parser):
         steps = get_observable(source)
         return steps
 
-    def get_contributions(self, source: Dict[str, Any], **kwargs) -> List[Dict[str, Any]]:
+    def get_contributions(
+        self, source: Dict[str, Any], **kwargs
+    ) -> List[Dict[str, Any]]:
         if kwargs.get('path') is None or source.get('step') is None:
             return []
 
@@ -124,7 +132,9 @@ class H5MDParser(MDParser):
         # create h5 parser
         self.h5_parser.filepath = self.mainfile
 
-        self.trajectory_steps = Path(path='particles.all.position.step').get_data(self.h5_parser.data, default=[])
+        self.trajectory_steps = Path(path='particles.all.position.step').get_data(
+            self.h5_parser.data, default=[]
+        )
         self.h5_parser.trajectory_steps = self.trajectory_steps
 
         # create metainfo parser

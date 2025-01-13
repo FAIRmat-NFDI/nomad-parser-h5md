@@ -47,7 +47,7 @@ from nomad_parser_h5md.schema_packages.schema import (
     TrajectoryOutputs,
     CustomProperty,
     ParamEntry,
-    ForceContribution,
+    # ForceContribution,
     EnergyContribution,
 )
 
