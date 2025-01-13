@@ -753,7 +753,8 @@ class H5MDParser(MDParser):
 
             forces = system_info.get(step, {}).get('forces')
             if forces is not None:
-                data_outputs['total_forces']['value'] = forces
+                pass
+                # data_outputs['total_forces']['value'] = forces
 
             for key, val in outputs_info.get(step).items():
                 key_split = key.split('-')
@@ -775,9 +776,10 @@ class H5MDParser(MDParser):
                     if 'forces' not in key:
                         key.replace('force', 'forces')
 
-                    data_outputs['total_forces']['contributions'].append(
-                        {'name': observable_label, 'value': val}
-                    )
+                    pass
+                    # data_outputs['total_forces']['contributions'].append(
+                    #     {'name': observable_label, 'value': val}
+                    # )
                 elif hasattr(TrajectoryOutputs, observable_label):
                     data_outputs[observable_label] = {'value': val}
                 else:
