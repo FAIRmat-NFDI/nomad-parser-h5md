@@ -9,6 +9,8 @@ from nomad.units import ureg
 
 class H5MDH5Parser(HDF5Parser):
     trajectory_steps: List[int] = []
+    output_steps: List[int] = []
+    observables: Dict[str, Any] = {}
 
     def get_value(self, name: str, dct: Dict[str, Any]) -> Any:
         value = dct.get(name, {}).get(self.value_key)
@@ -79,21 +81,66 @@ class H5MDH5Parser(HDF5Parser):
     def to_species_labels(self, source: List[str]) -> List[Dict[str, Any]]:
         return [{'label': s} for s in source]
 
+    # def get_output_steps(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
+    #     def get_observable(dct: Dict[str, Any]) -> List[Dict[str, Any]]:
+    #         for key, val in dct.items():
+    #             if key == 'step':
+    #                 times = self.get_value('time', dct)
+    #                 return [
+    #                     dict(step=step, time=times[n]) for n, step in enumerate(val)
+    #                 ]
+    #             if isinstance(val, dict):
+    #                 return get_observable(val)
+
+    #         return []
+
+    #     steps = get_observable(source)
+    #     return steps
+
     def get_output_steps(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
-        def get_observable(dct: Dict[str, Any]) -> List[Dict[str, Any]]:
-            for key, val in dct.items():
-                if key == 'step':
-                    times = self.get_value('time', dct)
-                    return [
-                        dict(step=step, time=times[n]) for n, step in enumerate(val)
-                    ]
-                if isinstance(val, dict):
-                    return get_observable(val)
+        output_steps = {}
 
-            return []
+        def get_steps(dct: Dict[str, Any]) -> Dict[str, Any]:
+            steps = dct.get('step')  # self.get_value('step', dct)
+            if steps is None:
+                return {}
+            times = self.get_value('time', dct)
+            if len(steps) != len(times):
+                self.logger.error(
+                    'Inconsistent step-time combinations in observable data.'
+                )
 
-        steps = get_observable(source)
-        return steps
+            return {step: times[n] for n, step in enumerate(steps)}
+
+        # TODO extract the collection of configurational observables to an external function since this will also be used in get_output_data
+        def get_observable_steps(
+            source: Dict[str, Any], output_steps: Dict[str, Any]
+        ) -> None:
+            for __, val in source.items():
+                observable_type = val.get('@type')
+                if not observable_type:
+                    get_observable_steps(val, output_steps)
+                elif observable_type == 'configurational':
+                    steps = get_steps(val)
+                    if not all(
+                        [
+                            time == output_steps[step]
+                            for step, time in steps.items()
+                            if step in output_steps.keys()
+                        ]
+                    ):
+                        self.logger.error(
+                            'Some inconsistent step-time combinations in observable data.'
+                        )
+                    output_steps.update(steps)
+
+        get_observable_steps(source, output_steps)
+        output_steps = [
+            # {'step': step, 'time': time} for step, time in output_steps.items()
+            dict(step=step, time=time)
+            for step, time in output_steps.items()
+        ]
+        return output_steps
 
     def get_contributions(
         self, source: Dict[str, Any], **kwargs
@@ -112,14 +159,61 @@ class H5MDH5Parser(HDF5Parser):
             contributions.append({'name': key, **step_data})
         return contributions
 
+    def set_step(self, source: Dict[str, Any], **kwargs) -> pint.Quantity:
+        print('in set step')
+        print(kwargs.get('path'))
+        if source.get('value') is not None:
+            return source['value']
+        if source.get('step') is None or kwargs.get('path') is None:
+            return
+
+        return source.get('step')
+
     def get_output_data(self, source: Dict[str, Any], **kwargs) -> pint.Quantity:
+        print('in get output data')
+        # print(kwargs.get('path'))
         if source.get('value') is not None:
             return source['value']
         if source.get('step') is None or kwargs.get('path') is None:
             return
 
         source_data = self.get_source(self.data, kwargs['path'])
+        if source_data.get('@type') != 'configurational':
+            return
+        print(kwargs.get('path'))
+        print(source.keys())
+        print(f'source: {source}')
         return self.get_step_data(source_data, source['step']).get('value')
+
+    def get_custom_outputs(
+        self, source: Dict[str, Any], **kwargs
+    ) -> List[Dict[str, Any]]:
+        print('in custom outputs!')
+        if kwargs.get('path') is None or source.get('step') is None:
+            return []
+
+        source_data = self.get_source(self.data, kwargs['path'])
+        include = kwargs.get('include')
+        exclude = kwargs.get('exclude')
+        observable_type = kwargs.get('observable_type')
+        custom_outputs = []
+        for key, val in source_data.items():
+            print(f'key = {key}')
+            print(f'val = {val}')
+            if include and key not in include or exclude and key in exclude:
+                continue
+
+            print(f'non-excluded source = {source}')
+            if observable_type is not None:
+                source_type = val.get('@type')
+                print(f'souce type = {source_type}')
+                if source_type != observable_type:
+                    continue
+            step_data = self.get_step_data(val, source['step'])
+            custom_outputs.append({'name': key, **step_data})
+        print('custom_outputs:')
+        print(custom_outputs)
+        return custom_outputs
 
 
 class H5MDParser(MDParser):

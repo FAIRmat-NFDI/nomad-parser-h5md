@@ -103,12 +103,12 @@ def test_md(parser):
     #     'newton'
     # ).magnitude == approx(500.0)
     assert sec_outputs[2].temperatures[0].value.to('kelvin').magnitude == approx(300.0)
-    print(sec_outputs[2].custom_outputs[0])
     assert sec_outputs[2].custom_outputs[0].m_def.name == 'CustomProperty'
     assert len(sec_outputs[1].custom_outputs) == 1
     assert sec_outputs[1].custom_outputs[0].name == 'custom_thermodynamic_properties'
     assert sec_outputs[1].custom_outputs[0].value == approx(100.0)
     assert sec_outputs[1].custom_outputs[0].unit == 'newton / angstrom ** 2'
+    assert sec_outputs[3].step == 3
     assert sec_outputs[2].time.to('ps').magnitude == approx(2.0)
     # Energies
     assert sec_outputs[2].total_energies[0].value.to('kilojoule').magnitude == approx(

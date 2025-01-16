@@ -76,12 +76,16 @@ class CustomProperty(physical_property.PhysicalProperty):
     Section describing a general type of calculation.
     """
 
+    # m_def = Section('get_custom_outputs'...a_mapping=)
     value = Quantity(
         type=np.float64,
         shape=[],
         description="""
         Value **magnitude** of the property. The unit is defined in the `unit` attribute.
         """,
+    )
+    value.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+        mapper='.value'
     )
 
     unit = Quantity(
@@ -91,6 +95,9 @@ class CustomProperty(physical_property.PhysicalProperty):
         Unit of the parameter as a string consistent with the UnitRegistry.pint module.
         """,
     )
+    unit.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+        mapper='.unit'
+    )
 
     description = Quantity(
         type=str,
@@ -98,6 +105,9 @@ class CustomProperty(physical_property.PhysicalProperty):
         description="""
         Further description of the property.
         """,
+    )
+    description.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+        mapper='.description'
     )
 
 
@@ -284,7 +294,31 @@ class TrajectoryOutputs(outputs.TrajectoryOutputs):
     m_def = Section(
         validate=False,
         # extends_base_section=True,
+        # a_mapping=dict(hdf5=MapperAnnotation(mapper='.@')),
     )
+
+    # step = Quantity(
+    #     type=np.int32,
+    #     description="""
+    #     The step number with respect to the workflow.
+    #     """,
+    # )
+
+    outputs.TrajectoryOutputs.step.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(
+            mapper=(
+                'set_step',
+                ['.@'],
+                dict(path='observables.custom_forces'),
+            )
+        )
+    )
+    #     MapperAnnotation(mapper='.step')
+    # )
+
+    # outputs.TrajectoryOutputs.time.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    #     MapperAnnotation(mapper='.time')
+    # )
 
     outputs.TrajectoryOutputs.total_energies.m_annotations.setdefault('mapping', {})[
         'hdf5'
@@ -301,6 +335,57 @@ class TrajectoryOutputs(outputs.TrajectoryOutputs):
         """,
         repeats=True,
     )
+
+    # custom_outputs.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    #     MapperAnnotation(
+    #         mapper=(
+    #             'get_custom_outputs',
+    #             ['.@'],
+    #             dict(
+    #                 path='observables',
+    #                 exclude=[
+    #                     'energies, temperatures, custom_forces'
+    #                 ],  # TODO get the exclusion list automatically
+    #                 observable_type='configurational',
+    #             ),
+    #         )
+    #     )
+    # )
+
+    # custom_outputs.value.m_annotations.setdefault('mapping', {})['hdf5'] = (
+
+    # custom_outputs = SubSection(sub_section=..., a_mapping=dict(hdf5=MapperAnnotation(
+    #         mapper=(
+    #             'get_custom_outputs',
+    #             ['.@'],
+    #             dict(
+    #                 path='observables',
+    #                 exclude=[
+    #                     'energies, temperatures, custom_forces'
+    #                 ],  # TODO get the exclusion list automatically
+    #                 observable_type='configurational',
+    #             ),
+    #         )
+    #     ))
+
+    # custom_outputs.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+    #     mapper=(
+    #         'get_custom_outputs',
+    #         ['.@'],
+    #         dict(
+    #             path='observables',
+    #             exclude=[
+    #                 'energies, temperatures, custom_forces'
+    #             ],  # TODO get the exclusion list automatically
+    #             observable_type='configurational',
+    #         ),
+    #     )
+    # )
+
+
+# outputs.TrajectoryOutputs.custom_outputs.m_annotations.setdefault('mapping', {})[
+#     'hdf5'
+# ] = MapperAnnotation(mapper='.@')
 
 
 class Author(ArchiveSection):
