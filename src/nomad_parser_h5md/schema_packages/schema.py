@@ -320,21 +320,21 @@ class TrajectoryOutputs(outputs.TrajectoryOutputs):
     #     MapperAnnotation(mapper='.time')
     # )
 
-    outputs.TrajectoryOutputs.total_energies.m_annotations.setdefault('mapping', {})[
-        'hdf5'
-    ] = MapperAnnotation(mapper='.@')
+    # outputs.TrajectoryOutputs.total_energies.m_annotations.setdefault('mapping', {})[
+    #     'hdf5'
+    # ] = MapperAnnotation(mapper='.@')
 
-    outputs.TrajectoryOutputs.temperatures.m_annotations.setdefault('mapping', {})[
-        'hdf5'
-    ] = MapperAnnotation(mapper='.@')
+    # outputs.TrajectoryOutputs.temperatures.m_annotations.setdefault('mapping', {})[
+    #     'hdf5'
+    # ] = MapperAnnotation(mapper='.@')
 
-    custom_outputs = SubSection(
-        sub_section=CustomProperty.m_def,
-        description="""
-        Contains other generic custom outputs that are not already defined.
-        """,
-        repeats=True,
-    )
+    # custom_outputs = SubSection(
+    #     sub_section=CustomProperty.m_def,
+    #     description="""
+    #     Contains other generic custom outputs that are not already defined.
+    #     """,
+    #     repeats=True,
+    # )
 
     # custom_outputs.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
     #     MapperAnnotation(
@@ -493,11 +493,11 @@ class Simulation(general.Simulation):
         MapperAnnotation(mapper='h5md.program')
     )
 
-    general.Simulation.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
-        MapperAnnotation(mapper=('get_system_steps', ['particles.all.position']))
-    )
+    # general.Simulation.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    #     MapperAnnotation(mapper=('get_system_steps', ['particles.all.position']))
+    # )
 
-    general.Simulation.outputs.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    outputs.TrajectoryOutputs.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
         MapperAnnotation(mapper=('get_output_steps', ['observables']))
     )
 
