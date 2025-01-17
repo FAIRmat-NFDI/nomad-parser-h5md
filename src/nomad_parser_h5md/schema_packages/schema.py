@@ -76,9 +76,9 @@ class CustomProperty(physical_property.PhysicalProperty):
     Section describing a general type of calculation.
     """
 
-    physical_property.PhysicalProperty.name.m_annotations.setdefault('mapping', {})[
-        'hdf5'
-    ] = MapperAnnotation(mapper='.name')
+    # physical_property.PhysicalProperty.name.m_annotations.setdefault('mapping', {})[
+    #     'hdf5'
+    # ] = MapperAnnotation(mapper='.name')
 
     # m_def = Section('get_custom_outputs'...a_mapping=)
     value = Quantity(
@@ -87,11 +87,11 @@ class CustomProperty(physical_property.PhysicalProperty):
         description="""
         Value **magnitude** of the property. The unit is defined in the `unit` attribute.
         """,
-        a_mapping=dict(hdf5=MapperAnnotation(mapper='.value')),
+        # a_mapping=dict(hdf5=MapperAnnotation(mapper='.value')),
     )
-    # value.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
-    #     mapper='.value'
-    # )
+    value.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+        mapper='.value'
+    )
 
     unit = Quantity(
         type=str,
@@ -475,6 +475,40 @@ class Simulation(general.Simulation):
     #     MapperAnnotation(mapper=('get_output_steps', ['observables']))
     # )
 
+
+# TrajectoryOutputs.custom_outputs.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(
+#         mapper=(
+#             'get_custom_outputs',
+#             ['.@'],
+#             dict(
+#                 path='observables',
+#                 exclude=[
+#                     'energies, temperatures, custom_forces'
+#                 ],  # TODO get the exclusion list automatically
+#                 observable_type='configurational',
+#             ),
+#         )
+#     )
+# )
+
+# CustomProperty.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+#     mapper=(
+#         'get_custom_outputs',
+#         ['.@'],
+#         dict(
+#             path='observables',
+#             exclude=[
+#                 'energies, temperatures, custom_forces'
+#             ],  # TODO get the exclusion list automatically
+#             observable_type='configurational',
+#         ),
+#     )
+# )
+
+# TrajectoryOutputs.custom_outputs.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(mapper='.@')
+# )
 
 # ! Need to link to extended TO class!
 TrajectoryOutputs.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
