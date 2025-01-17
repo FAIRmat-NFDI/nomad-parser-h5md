@@ -19,7 +19,7 @@ class H5MDH5Parser(HDF5Parser):
         unit = dct.get(name, {}).get(f'{self.attribute_prefix}unit')
         if unit:
             value = value * ureg(unit)
-        factor = dct.get(f'{self.attribute_prefix}unit_factor')
+        factor = dct.get(name, {}).get(f'{self.attribute_prefix}unit_factor')
         if factor:
             value = value * factor
         return value
@@ -35,7 +35,7 @@ class H5MDH5Parser(HDF5Parser):
         steps = source.get('step')
         times = self.get_value('time', source)
         return [
-            dict(step=step, time=times[n])
+            {'step': step, 'time': times[n]}
             for n, step in enumerate(steps)
             if step in self.trajectory_steps
         ]
@@ -81,27 +81,13 @@ class H5MDH5Parser(HDF5Parser):
     def to_species_labels(self, source: List[str]) -> List[Dict[str, Any]]:
         return [{'label': s} for s in source]
 
-    # def get_output_steps(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
-    #     def get_observable(dct: Dict[str, Any]) -> List[Dict[str, Any]]:
-    #         for key, val in dct.items():
-    #             if key == 'step':
-    #                 times = self.get_value('time', dct)
-    #                 return [
-    #                     dict(step=step, time=times[n]) for n, step in enumerate(val)
-    #                 ]
-    #             if isinstance(val, dict):
-    #                 return get_observable(val)
-
-    #         return []
-
-    #     steps = get_observable(source)
-    #     return steps
-
     def get_output_steps(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
         output_steps = {}
 
         def get_steps(dct: Dict[str, Any]) -> Dict[str, Any]:
-            steps = dct.get('step')  # self.get_value('step', dct)
+            steps = dct.get(
+                'step'
+            )  # self.get_value('step', dct) # TODO Generalize get_value to work in case of non-dict
             if steps is None:
                 return {}
             times = self.get_value('time', dct)
@@ -112,7 +98,6 @@ class H5MDH5Parser(HDF5Parser):
 
             return {step: times[n] for n, step in enumerate(steps)}
 
-        # TODO extract the collection of configurational observables to an external function since this will also be used in get_output_data
         def get_observable_steps(
             source: Dict[str, Any], output_steps: Dict[str, Any]
         ) -> None:
@@ -130,15 +115,13 @@ class H5MDH5Parser(HDF5Parser):
                         ]
                     ):
                         self.logger.error(
-                            'Some inconsistent step-time combinations in observable data.'
+                            'Inconsistent step-time combinations in observable data.'
                         )
                     output_steps.update(steps)
 
         get_observable_steps(source, output_steps)
         output_steps = [
-            # {'step': step, 'time': time} for step, time in output_steps.items()
-            dict(step=step, time=time)
-            for step, time in output_steps.items()
+            {'step': step, 'time': time} for step, time in output_steps.items()
         ]
         return output_steps
 
@@ -159,19 +142,7 @@ class H5MDH5Parser(HDF5Parser):
             contributions.append({'name': key, **step_data})
         return contributions
 
-    def set_step(self, source: Dict[str, Any], **kwargs) -> pint.Quantity:
-        print('in set step')
-        print(kwargs.get('path'))
-        if source.get('value') is not None:
-            return source['value']
-        if source.get('step') is None or kwargs.get('path') is None:
-            return
-
-        return source.get('step')
-
     def get_output_data(self, source: Dict[str, Any], **kwargs) -> pint.Quantity:
-        print('in get output data')
-        # print(kwargs.get('path'))
         if source.get('value') is not None:
             return source['value']
         if source.get('step') is None or kwargs.get('path') is None:
@@ -180,9 +151,6 @@ class H5MDH5Parser(HDF5Parser):
         source_data = self.get_source(self.data, kwargs['path'])
         if source_data.get('@type') != 'configurational':
             return
-        print(kwargs.get('path'))
-        print(source.keys())
-        print(f'source: {source}')
         return self.get_step_data(source_data, source['step']).get('value')
 
     def get_custom_outputs(
