@@ -309,21 +309,19 @@ class TrajectoryOutputs(outputs.TrajectoryOutputs):
         repeats=True,
     )
 
-    # outputs.TrajectoryOutputs.custom_outputs.m_annotations.setdefault('mapping', {})[
-    #     'hdf5'
-    # ] = MapperAnnotation(
-    #     mapper=(
-    #         'get_custom_outputs',
-    #         ['.@'],
-    #         dict(
-    #             path='observables',
-    #             exclude=[
-    #                 'energies, temperatures, custom_forces'
-    #             ],  # TODO get the exclusion list automatically
-    #             observable_type='configurational',
-    #         ),
-    #     )
-    # )
+    custom_outputs.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+        mapper=(
+            'get_custom_outputs',
+            ['.@'],
+            dict(
+                path='observables',
+                exclude=[
+                    'energies, temperatures, custom_forces'
+                ],  # TODO get the exclusion list automatically
+                observable_type='configurational',
+            ),
+        )
+    )
 
     # custom_outputs.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
     #     mapper=(
@@ -439,7 +437,7 @@ class Simulation(general.Simulation):
         MapperAnnotation(mapper='h5md.program')
     )
 
-    # model_system.ModelSystem.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    # model_system.ModelSystem.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
     #     MapperAnnotation(mapper=('get_system_steps', ['particles.all.position']))
     # )
 
@@ -447,22 +445,6 @@ class Simulation(general.Simulation):
         MapperAnnotation(mapper=('get_output_steps', ['observables']))
     )
 
-
-outputs.TrajectoryOutputs.custom_outputs.m_annotations.setdefault('mapping', {})[
-    'hdf5'
-] = MapperAnnotation(
-    mapper=(
-        'get_custom_outputs',
-        ['.@'],
-        dict(
-            path='observables',
-            exclude=[
-                'energies, temperatures, custom_forces'
-            ],  # TODO get the exclusion list automatically
-            observable_type='configurational',
-        ),
-    )
-)
 
 Simulation.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
     mapper='@'
