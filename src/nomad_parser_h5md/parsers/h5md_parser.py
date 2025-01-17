@@ -167,14 +167,13 @@ class H5MDH5Parser(HDF5Parser):
         custom_outputs = []
         for key, val in source_data.items():
             print(f'key = {key}')
-            print(f'val = {val}')
+            # print(f'val = {val}')
             if include and key not in include or exclude and key in exclude:
                 continue
-
-            print(f'non-excluded source = {source}')
+            # print(f'non-excluded source = {source}')
             if observable_type is not None:
                 source_type = val.get('@type')
-                print(f'souce type = {source_type}')
+                print(f'source type = {source_type}')
                 if source_type != observable_type:
                     continue
             step_data = self.get_step_data(val, source['step'])

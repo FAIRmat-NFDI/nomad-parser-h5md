@@ -71,7 +71,7 @@ class ParamEntry(ArchiveSection):
     )
 
 
-class CustomProperty(physical_property.PhysicalProperty):
+class CustomProperty(ArchiveSection):  # physical_property.PhysicalProperty):
     """
     Section describing a general type of calculation.
     """
@@ -332,21 +332,21 @@ class TrajectoryOutputs(outputs.TrajectoryOutputs):
         # ),
     )
 
-    custom_outputs.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
-        MapperAnnotation(
-            mapper=(
-                'get_custom_outputs',
-                ['.@'],
-                dict(
-                    path='observables',
-                    exclude=[
-                        'energies, temperatures, custom_forces'
-                    ],  # TODO get the exclusion list automatically
-                    observable_type='configurational',
-                ),
-            )
-        )
-    )
+    # custom_outputs.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    #     MapperAnnotation(
+    #         mapper=(
+    #             'get_custom_outputs',
+    #             ['.@'],
+    #             dict(
+    #                 path='observables',
+    #                 exclude=[
+    #                     'energies, temperatures, custom_forces'
+    #                 ],  # TODO get the exclusion list automatically
+    #                 observable_type='configurational',
+    #             ),
+    #         )
+    #     )
+    # )
 
     # custom_outputs.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
     #     mapper=(
@@ -505,6 +505,22 @@ class Simulation(general.Simulation):
 #         ),
 #     )
 # )
+
+TrajectoryOutputs.custom_outputs.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(
+        mapper=(
+            'get_custom_outputs',
+            ['.@'],
+            dict(
+                path='observables',
+                exclude=[
+                    'energies, temperatures, custom_forces'
+                ],  # TODO get the exclusion list automatically
+                observable_type='configurational',
+            ),
+        )
+    )
+)
 
 # TrajectoryOutputs.custom_outputs.m_annotations.setdefault('mapping', {})['hdf5'] = (
 #     MapperAnnotation(mapper='.@')
