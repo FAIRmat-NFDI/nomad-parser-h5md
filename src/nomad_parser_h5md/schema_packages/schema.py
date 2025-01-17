@@ -332,21 +332,6 @@ class TrajectoryOutputs(outputs.TrajectoryOutputs):
         # ),
     )
 
-    custom_outputs.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
-        MapperAnnotation(
-            mapper=(
-                'get_custom_outputs',
-                ['.@'],
-                dict(
-                    path='observables',
-                    exclude=[
-                        'energies, temperatures, custom_forces'
-                    ],  # TODO get the exclusion list automatically
-                    observable_type='configurational',
-                ),
-            )
-        )
-    )
 
     # custom_outputs.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
     #     mapper=(
@@ -530,6 +515,21 @@ TrajectoryOutputs.total_energies.m_annotations.setdefault('mapping', {})['hdf5']
 TrajectoryOutputs.temperatures.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper='.@')
 )
+TrajectoryOutputs.custom_outputs.m_annotations.setdefault('mapping', {})['hdf5'] = (
+        MapperAnnotation(
+            mapper=(
+                'get_custom_outputs',
+                ['.@'],
+                dict(
+                    path='observables',
+                    exclude=[
+                        'energies, temperatures, custom_forces'
+                    ],  # TODO get the exclusion list automatically
+                    observable_type='configurational',
+                ),
+            )
+        )
+    )
 
 
 # ! This can go anywhere
