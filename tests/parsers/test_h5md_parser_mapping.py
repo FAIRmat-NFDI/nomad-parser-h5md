@@ -56,24 +56,25 @@ def test_md(parser):
     assert sec_simulation.x_h5md_creator.version == '3.6.0'
 
     ## SYSTEM
-    # sec_systems = sec_simulation.model_system
-    # assert len(sec_systems) == 5
-    # assert np.shape(sec_systems[0].cell[0].positions) == (31583, 3)
-    # assert np.shape(sec_systems[0].cell[0].velocities) == (31583, 3)
-    # assert sec_systems[0].cell[0].n_atoms == 31583
-    # assert sec_systems[0].cell[0].atoms_state[100].chemical_symbol == 'H'
+    sec_systems = sec_simulation.model_system
+    assert len(sec_systems) == 5
+    print(sec_systems[0])
+    assert np.shape(sec_systems[0].cell[0].positions) == (31583, 3)
+    assert np.shape(sec_systems[0].cell[0].velocities) == (31583, 3)
+    assert sec_systems[0].cell[0].n_atoms == 31583
+    assert sec_systems[0].cell[0].atoms_state[100].chemical_symbol == 'H'
 
-    # assert sec_systems[2].cell[0].positions[800][1].to('angstrom').magnitude == approx(
-    #     26.860575
-    # )
-    # assert sec_systems[2].cell[0].velocities[1200][2].to(
-    #     'angstrom/ps'
-    # ).magnitude == approx(400.0)
-    # assert sec_systems[3].cell[0].lattice_vectors[2][2].to(
-    #     'angstrom'
-    # ).magnitude == approx(68.22318)
-    # assert sec_systems[0].bond_list[200][0] == 198
-    # assert sec_systems[0].dimensionality == 3
+    assert sec_systems[2].cell[0].positions[800][1].to('angstrom').magnitude == approx(
+        26.860575
+    )
+    assert sec_systems[2].cell[0].velocities[1200][2].to(
+        'angstrom/ps'
+    ).magnitude == approx(400.0)
+    assert sec_systems[3].cell[0].lattice_vectors[2][2].to(
+        'angstrom'
+    ).magnitude == approx(68.22318)
+    assert sec_systems[0].bond_list[200][0] == 198
+    assert sec_systems[0].dimensionality == 3
 
     # sec_atoms_group = sec_systems[0].model_system
     # assert len(sec_atoms_group) == 4
