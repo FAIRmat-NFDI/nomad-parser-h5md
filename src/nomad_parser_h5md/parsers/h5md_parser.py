@@ -167,6 +167,8 @@ class H5MDH5Parser(HDF5Parser):
         custom_outputs = []
         for key, val in source_data.items():
             print(f'key = {key}')
+            print(exclude)
+            print(key in exclude)
             # print(f'val = {val}')
             if include and key not in include or exclude and key in exclude:
                 continue
@@ -177,6 +179,11 @@ class H5MDH5Parser(HDF5Parser):
                 if source_type != observable_type:
                     continue
             step_data = self.get_step_data(val, source['step'])
+            if step_data.get('value') is not None:
+                if isinstance(step_data['value'], pint.Quantity):
+                    step_data['unit'] = str(step_data['value'].units)
+                    step_data['value'] = step_data['value'].magnitude
+            print(step_data['value'].shape)
             custom_outputs.append({'name': key, **step_data})
         print('custom_outputs:')
         print(custom_outputs)

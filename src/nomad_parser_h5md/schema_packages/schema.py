@@ -81,6 +81,17 @@ class CustomProperty(ArchiveSection):  # physical_property.PhysicalProperty):
     # ] = MapperAnnotation(mapper='.name')
 
     # m_def = Section('get_custom_outputs'...a_mapping=)
+    name = Quantity(
+        type=str,
+        shape=[],
+        description="""
+        Name of the parameter.
+        """,
+    )
+    name.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+        mapper='.name'
+    )
+
     value = Quantity(
         type=np.float64,
         shape=[],
@@ -514,7 +525,9 @@ TrajectoryOutputs.custom_outputs.m_annotations.setdefault('mapping', {})['hdf5']
             dict(
                 path='observables',
                 exclude=[
-                    'energies, temperatures, custom_forces'
+                    'energies',
+                    'temperatures',
+                    'custom_forces',
                 ],  # TODO get the exclusion list automatically
                 observable_type='configurational',
             ),

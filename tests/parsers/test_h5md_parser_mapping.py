@@ -110,6 +110,7 @@ def test_md(parser):
     assert sec_outputs[2].temperatures[0].value.to('kelvin').magnitude == approx(300.0)
 
     assert sec_outputs[2].custom_outputs[0].m_def.name == 'CustomProperty'
+    print(sec_outputs[1].custom_outputs)
     assert len(sec_outputs[1].custom_outputs) == 1
     assert sec_outputs[1].custom_outputs[0].name == 'custom_thermodynamic_properties'
     assert sec_outputs[1].custom_outputs[0].value == approx(100.0)
