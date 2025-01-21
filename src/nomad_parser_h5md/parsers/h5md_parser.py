@@ -203,7 +203,6 @@ class H5MDH5Parser(HDF5Parser):
     def get_custom_outputs(
         self, source: Dict[str, Any], **kwargs
     ) -> List[Dict[str, Any]]:
-        print('in custom outputs!')
         if kwargs.get('path') is None or source.get('step') is None:
             return []
 

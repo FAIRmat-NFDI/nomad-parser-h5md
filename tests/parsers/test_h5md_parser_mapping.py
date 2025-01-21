@@ -38,7 +38,7 @@ def parser():
 
 def test_md(parser):
     archive = EntryArchive()
-    parser.parse('tests/data/test_traj_openmm_5frames.h5', archive, None)
+    parser.parse('tests/data/test_traj_openmm_5frames_new.h5', archive, None)
 
     #######################
     # Test the NEW SCHEMA #
@@ -98,26 +98,11 @@ def test_md(parser):
 
     ## OUTPUTS
     sec_outputs = sec_simulation.outputs
-    print(sec_outputs)
-    print(sec_outputs[2])
-    print(sec_outputs[2].total_energies)
-    print(sec_outputs[2].total_energies[0].contributions)
     assert len(sec_outputs) == 5
-    # assert np.shape(sec_outputs[1].total_forces[0].value) == (31583, 3)
-    # assert sec_outputs[1].total_forces[0].value[2100][2].to(
-    #     'newton'
-    # ).magnitude == approx(500.0)
-    assert sec_outputs[2].temperatures[0].value.to('kelvin').magnitude == approx(300.0)
-
-    assert sec_outputs[2].custom_outputs[0].m_def.name == 'CustomProperty'
-    print(sec_outputs[1].custom_outputs)
-    assert len(sec_outputs[1].custom_outputs) == 1
-    assert sec_outputs[1].custom_outputs[0].name == 'custom_thermodynamic_properties'
-    assert sec_outputs[1].custom_outputs[0].value == approx(100.0)
-    assert sec_outputs[1].custom_outputs[0].unit == 'newton / angstrom ** 2'
-
     assert sec_outputs[3].step == 3
     assert sec_outputs[2].time.to('ps').magnitude == approx(2.0)
+    # Temperature
+    assert sec_outputs[2].temperatures[0].value.to('kelvin').magnitude == approx(300.0)
     # Energies
     print(sec_outputs[2].total_energies[0])
     print(sec_outputs[2].total_energies[0].value)
@@ -136,14 +121,21 @@ def test_md(parser):
     assert sec_outputs[2].total_energies[0].contributions[2].value.to(
         'kilojoule'
     ).magnitude == approx(1.0)
-
     # Forces
-    # assert sec_outputs[2].total_forces[0].value[11].to('newton').magnitude == approx(
-    #     500.0
-    # )
-    # assert sec_outputs[2].total_forces[0].contributions[0].name == 'custom_forces'
-    # assert sec_outputs[2].total_forces[0].contributions[0].value[21].to(
-    #     'newton'
-    # ).magnitude == approx(4.0)
-
-    # assert 1 == 2
+    assert np.shape(sec_outputs[1].total_forces[0].value) == (31583, 3)
+    assert sec_outputs[1].total_forces[0].value[2100][2].to(
+        'newton'
+    ).magnitude == approx(500.0)
+    assert sec_outputs[2].total_forces[0].value[11].to('newton').magnitude == approx(
+        500.0
+    )
+    assert sec_outputs[2].total_forces[0].contributions[0].name == 'custom'
+    assert sec_outputs[2].total_forces[0].contributions[0].value[21].to(
+        'newton'
+    ).magnitude == approx(4.0)
+    # Custom Outputs
+    assert sec_outputs[2].custom_outputs[0].m_def.name == 'CustomProperty'
+    assert len(sec_outputs[1].custom_outputs) == 1
+    assert sec_outputs[1].custom_outputs[0].name == 'custom_thermodynamic_properties'
+    assert sec_outputs[1].custom_outputs[0].value == approx(100.0)
+    assert sec_outputs[1].custom_outputs[0].unit == 'newton / angstrom ** 2'

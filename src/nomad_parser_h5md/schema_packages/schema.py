@@ -184,6 +184,72 @@ TotalEnergy.contributions.m_annotations.setdefault('mapping', {})['hdf5'] = (
 )
 
 
+# ! Define temporarily force sections until new PP class is ready
+class ForceContribution(ArchiveSection):
+    """
+    Abstract class used to define a common `value` quantity with the appropriate units
+    for different types of forces, which avoids repeating the definitions for each
+    force class.
+    """
+
+    name = Quantity(
+        type=str,
+        shape=[],
+        description="""
+        Name of the parameter.
+        """,
+    )
+
+    value = Quantity(
+        type=np.float64,
+        shape=['*', 3],
+        unit='newton',
+        description="""
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+
+ForceContribution.name.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(mapper='.name')
+)
+
+
+class TotalForce(ForceContribution):
+    """
+    The total force on a system. `contributions` specify individual force
+    contributions to the `TotalForce`.
+    """
+
+    contributions = SubSection(sub_section=ForceContribution.m_def, repeats=True)
+
+    def __init__(
+        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
+    ) -> None:
+        super().__init__(m_def, m_context, **kwargs)
+        self.name = self.m_def.name
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+
+TotalForce.value.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+    mapper=('get_output_data', ['.@'], dict(path='observables.forces.total'))
+)
+
+TotalForce.contributions.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(
+        mapper=(
+            'get_contributions',
+            ['.@'],
+            dict(path='observables.forces', exclude=['total']),
+        )
+    )
+)
+
+
 class Temperature(properties.Temperature):
     pass
 
@@ -318,6 +384,8 @@ class TrajectoryOutputs(outputs.TrajectoryOutputs):
         repeats=True,
     )
 
+    total_forces = SubSection(sub_section=TotalForce.m_def, repeats=True)
+
 
 TrajectoryOutputs.custom_outputs.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
@@ -350,6 +418,10 @@ TrajectoryOutputs.time.m_annotations.setdefault('mapping', {})['hdf5'] = (
 )
 
 TrajectoryOutputs.total_energies.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(mapper='.@')
+)
+
+TrajectoryOutputs.total_forces.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper='.@')
 )
 
