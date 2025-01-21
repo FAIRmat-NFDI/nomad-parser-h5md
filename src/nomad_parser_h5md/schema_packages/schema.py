@@ -30,6 +30,7 @@ from nomad_simulations.schema_packages import (
     properties,
 )
 from nomad_simulations.schema_packages import physical_property
+from simulationworkflowschema.schema_packages import molecular_dynamics
 
 m_package = SchemaPackage()
 
@@ -514,6 +515,15 @@ Simulation.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
 
 Simulation.program.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
     mapper='h5md.program'
+)
+
+
+class MolecularDynamics(molecular_dynamics.MolecularDynamics):
+    pass
+
+
+MolecularDynamics.method.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(mapper=('get_md_parameters', ['parameters.workflow']))
 )
 
 m_package.__init_metainfo__()

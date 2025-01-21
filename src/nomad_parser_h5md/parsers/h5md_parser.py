@@ -6,6 +6,8 @@ from nomad_parser_h5md.schema_packages.schema import Simulation
 from nomad_parser_h5md.parsers.mdparserutils import MDParser
 from nomad.units import ureg
 
+from h5py import Group
+
 
 class H5MDH5Parser(HDF5Parser):
     trajectory_steps: List[int] = []
@@ -225,6 +227,48 @@ class H5MDH5Parser(HDF5Parser):
                     step_data['value'] = step_data['value'].magnitude
             custom_outputs.append({'name': key, **step_data})
         return custom_outputs
+
+    def get_parameters(self, parameter_group: Group, path: str) -> Dict:
+        param_dict: Dict[Any, Any] = {}
+        for key, val in parameter_group.items():
+            path_key = f'{path}.{key}'
+            if isinstance(val, Group):
+                param_dict[key] = self.get_parameters(val, path_key)
+            else:
+                param_dict[key] = self._data_parser.get(path_key)
+                if isinstance(param_dict[key], str):
+                    param_dict[key] = (
+                        param_dict[key].upper()
+                        if key == 'thermodynamic_ensemble'
+                        else param_dict[key].lower()
+                    )
+                elif isinstance(param_dict[key], (int, np.int32, np.int64)):
+                    param_dict[key] = param_dict[key].item()
+        return param_dict
+
+    def get_md_parameters(
+        self, source: Dict[str, Any], **kwargs
+    ) -> List[Dict[str, Any]]:
+        print('in get md parameters')
+        if kwargs.get('path') is None:
+            return []
+
+        source_data = self.get_source(self.data, kwargs['path'])
+
+        self._parameter_info = {'force_calculations': {}, 'workflow': {}}
+
+        force_calculations_group = self._data_parser.get(
+            'parameters.force_calculations'
+        )
+        if force_calculations_group is not None:
+            self._parameter_info['force_calculations'] = self.get_parameters(
+                force_calculations_group, 'parameters.force_calculations'
+            )
+        workflow_group = self._data_parser.get('parameters.workflow')
+        if workflow_group is not None:
+            self._parameter_info['workflow'] = self.get_parameters(
+                workflow_group, 'parameters.workflow'
+            )
 
 
 class H5MDParser(MDParser):
