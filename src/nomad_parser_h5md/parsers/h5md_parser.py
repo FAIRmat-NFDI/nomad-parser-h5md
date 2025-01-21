@@ -13,7 +13,10 @@ class H5MDH5Parser(HDF5Parser):
     observables: Dict[str, Any] = {}
 
     def get_value(self, name: str, dct: Dict[str, Any]) -> Any:
-        value = dct.get(name, {}).get(self.value_key)
+        value = dct.get(name, {})
+        if not isinstance(value, dict):
+            return value
+        value = value.get(self.value_key)
         if value is None:
             return
         unit = dct.get(name, {}).get(f'{self.attribute_prefix}unit')
@@ -32,7 +35,7 @@ class H5MDH5Parser(HDF5Parser):
         return self.get_source(source, path_segments[1])
 
     def get_system_steps(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
-        steps = source.get('step')
+        steps = self.get_value('step', source)
         times = self.get_value('time', source)
         return [
             {'step': step, 'time': times[n]}
@@ -43,7 +46,7 @@ class H5MDH5Parser(HDF5Parser):
     def get_step_data(self, data: Dict[str, Any], step: int) -> Dict[str, Any]:
         step_data = {}
         value = self.get_value('value', data)
-        steps = data.get('step')
+        steps = self.get_value('step', data)
         if value is None or steps is None:
             return step_data
         index = steps.index(step)
@@ -78,6 +81,52 @@ class H5MDH5Parser(HDF5Parser):
 
         return system_data
 
+    # def get_system_hierarchy(
+    #     self,
+    #     nomad_sec: ModelSystem,
+    #     h5md_sec_particlesgroup: Group,
+    #     path_particlesgroup: str,
+    # ):
+    #     data = {}
+    #     for key in h5md_sec_particlesgroup.keys():
+    #         path_particlesgroup_key = f'{path_particlesgroup}.{key}'
+    #         particles_group = {
+    #             group_key: self._data_parser.get(
+    #                 f'{path_particlesgroup_key}.{group_key}'
+    #             )
+    #             for group_key in h5md_sec_particlesgroup[key].keys()
+    #         }
+    #         sec_model_system = ModelSystem()
+    #         nomad_sec.model_system.append(sec_model_system)
+    #         data['branch_label'] = particles_group.pop('label', None)
+    #         data['atom_indices'] = particles_group.pop('indices', None)
+    #         # TODO remove the deprecated below from the test file
+    #         # sec_atomsgroup.type = particles_group.pop("type", None) #? deprecate?
+    #         particles_group.pop('type', None)
+    #         # sec_atomsgroup.is_molecule = particles_group.pop("is_molecule", None) #? deprecate?
+    #         particles_group.pop('is_molecule', None)
+    #         particles_group.pop('formula', None)  # covered in normalization now
+    #         # write all the standard quantities to the archive
+    #         self.parse_section(data, sec_model_system)
+    #         particles_subgroup = particles_group.pop('particles_group', None)
+
+    #         # set the remaining attributes
+    #         for particles_group_key in particles_group.keys():
+    #             val = particles_group.get(particles_group_key)
+    #             units = val.units if hasattr(val, 'units') else None
+    #             val = val.magnitude if units is not None else val
+    #             sec_model_system.custom_system_attributes.append(
+    #                 ParamEntry(name=particles_group_key, value=val, unit=units)
+    #             )
+
+    #         # get the next branch level
+    #         if particles_subgroup:
+    #             self.parse_system_hierarchy(
+    #                 sec_model_system,
+    #                 particles_subgroup,
+    #                 f'{path_particlesgroup_key}.particles_group',
+    #             )
+
     def to_species_labels(self, source: List[str]) -> List[Dict[str, Any]]:
         return [{'label': s} for s in source]
 
@@ -85,9 +134,7 @@ class H5MDH5Parser(HDF5Parser):
         output_steps = {}
 
         def get_steps(dct: Dict[str, Any]) -> Dict[str, Any]:
-            steps = dct.get(
-                'step'
-            )  # self.get_value('step', dct) # TODO Generalize get_value to work in case of non-dict
+            steps = self.get_value('step', dct)
             if steps is None:
                 return {}
             times = self.get_value('time', dct)
@@ -166,16 +213,10 @@ class H5MDH5Parser(HDF5Parser):
         observable_type = kwargs.get('observable_type')
         custom_outputs = []
         for key, val in source_data.items():
-            print(f'key = {key}')
-            print(exclude)
-            print(key in exclude)
-            # print(f'val = {val}')
             if include and key not in include or exclude and key in exclude:
                 continue
-            # print(f'non-excluded source = {source}')
             if observable_type is not None:
                 source_type = val.get('@type')
-                print(f'source type = {source_type}')
                 if source_type != observable_type:
                     continue
             step_data = self.get_step_data(val, source['step'])
@@ -183,10 +224,7 @@ class H5MDH5Parser(HDF5Parser):
                 if isinstance(step_data['value'], pint.Quantity):
                     step_data['unit'] = str(step_data['value'].units)
                     step_data['value'] = step_data['value'].magnitude
-            print(step_data['value'].shape)
             custom_outputs.append({'name': key, **step_data})
-        print('custom_outputs:')
-        print(custom_outputs)
         return custom_outputs
 
 
