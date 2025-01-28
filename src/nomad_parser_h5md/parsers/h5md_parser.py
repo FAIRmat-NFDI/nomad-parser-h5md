@@ -221,9 +221,21 @@ class H5MDH5Parser(HDF5Parser):
             return source['value']
         if source.get('step') is None or kwargs.get('path') is None:
             return
+        observable_type = kwargs.get('observable_type')
+        if observable_type is None or observable_type not in [
+            'configurational',
+            'ensemble_average',
+            'correlation_function',
+        ]:
+            self.logger.warning(
+                'Invalid or no obervable type defined in the schema annotation '
+                f'for {source.keys()},skipping this observable.'
+            )
+            return
+        print(source.keys())
 
         source_data = self.get_source(self.data, kwargs['path'])
-        if source_data.get('@type') != 'configurational':
+        if source_data.get('@type') != observable_type:
             return
         return self.get_step_data(source_data, source['step']).get('value')
 

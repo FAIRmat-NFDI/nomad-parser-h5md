@@ -38,6 +38,44 @@ m_package = SchemaPackage()
 # SIMULATION --> archive.data
 
 
+class ParamEntry(ArchiveSection):
+    """
+    Generic section defining a parameter name and value
+    """
+
+    name = Quantity(
+        type=str,
+        shape=[],
+        description="""
+        Name of the parameter.
+        """,
+    )
+
+    value = Quantity(
+        type=str,
+        shape=[],
+        description="""
+        Value of the parameter as a string.
+        """,
+    )
+
+    unit = Quantity(
+        type=str,
+        shape=[],
+        description="""
+        Unit of the parameter as a string.
+        """,
+    )
+
+    description = Quantity(
+        type=str,
+        shape=[],
+        description="""
+        Further description of the attribute.
+        """,
+    )
+
+
 class Author(ArchiveSection):
     """
     Contains the specifications of the program.
@@ -174,44 +212,6 @@ ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})['hdf5'] = (
 ## SIMULATION.METHOD --> archive.data.method
 
 
-class ParamEntry(ArchiveSection):
-    """
-    Generic section defining a parameter name and value
-    """
-
-    name = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Name of the parameter.
-        """,
-    )
-
-    value = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Value of the parameter as a string.
-        """,
-    )
-
-    unit = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Unit of the parameter as a string.
-        """,
-    )
-
-    description = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Further description of the attribute.
-        """,
-    )
-
-
 # class ForceCalculations(runschema.method.ForceCalculations):
 #     m_def = Section(
 #         validate=False,
@@ -311,7 +311,11 @@ class TotalEnergy(properties.TotalEnergy):
 
 
 TotalEnergy.value.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
-    mapper=('get_output_data', ['.@'], dict(path='observables.energies.total'))
+    mapper=(
+        'get_output_data',
+        ['.@'],
+        dict(path='observables.energies.total', observable_type='configurational'),
+    )
 )
 
 ### SUBSECTIONS
@@ -379,7 +383,11 @@ class TotalForce(ForceContribution):
 
 
 TotalForce.value.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
-    mapper=('get_output_data', ['.@'], dict(path='observables.forces.total'))
+    mapper=(
+        'get_output_data',
+        ['.@'],
+        dict(path='observables.forces.total', observable_type='configurational'),
+    )
 )
 
 ### SUBSECTIONS
@@ -400,7 +408,11 @@ class Temperature(properties.Temperature):
 
 
 Temperature.value.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
-    mapper=('get_output_data', ['.@'], dict(path='observables.temperatures'))
+    mapper=(
+        'get_output_data',
+        ['.@'],
+        dict(path='observables.temperatures', observable_type='configurational'),
+    )
 )
 
 
@@ -513,7 +525,7 @@ Simulation.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
 
 
 # WORKFLOW --> archive.workflow2
-
+h5md_path_md = 'parameters.workflow.molecular_dynamics'
 
 ## WORKFLOW.METHOD --> archive.workflow2.method
 
@@ -522,13 +534,13 @@ class ThermostatParameters(molecular_dynamics.ThermostatParameters):
     pass
 
 
-path_thermostat = f'{path_md}.thermostat_parameters'
+h5md_path_thermostat = f'{h5md_path_md}.thermostat_parameters'
 
 ThermostatParameters.thermostat_type.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_thermostat],
+            [h5md_path_thermostat],
             dict(key='thermostat_type'),
         )
     )
@@ -539,7 +551,7 @@ ThermostatParameters.reference_temperature.m_annotations.setdefault('mapping', {
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_thermostat],
+        [h5md_path_thermostat],
         dict(key='reference_temperature'),
     )
 )
@@ -549,7 +561,7 @@ ThermostatParameters.coupling_constant.m_annotations.setdefault('mapping', {})[
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_thermostat],
+        [h5md_path_thermostat],
         dict(key='coupling_constant'),
     )
 )
@@ -558,7 +570,7 @@ ThermostatParameters.effective_mass.m_annotations.setdefault('mapping', {})['hdf
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_thermostat],
+            [h5md_path_thermostat],
             dict(key='effective_mass'),
         )
     )
@@ -569,7 +581,7 @@ ThermostatParameters.temperature_profile.m_annotations.setdefault('mapping', {})
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_thermostat],
+        [h5md_path_thermostat],
         dict(key='temperature_profile'),
     )
 )
@@ -579,7 +591,7 @@ ThermostatParameters.reference_temperature_start.m_annotations.setdefault(
 )['hdf5'] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_thermostat],
+        [h5md_path_thermostat],
         dict(key='reference_temperature_start'),
     )
 )
@@ -589,7 +601,7 @@ ThermostatParameters.reference_temperature_end.m_annotations.setdefault('mapping
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_thermostat],
+        [h5md_path_thermostat],
         dict(key='reference_temperature_end'),
     )
 )
@@ -599,7 +611,7 @@ ThermostatParameters.temperature_update_frequency.m_annotations.setdefault(
 )['hdf5'] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_thermostat],
+        [h5md_path_thermostat],
         dict(key='temperature_update_frequency'),
     )
 )
@@ -609,7 +621,7 @@ ThermostatParameters.temperature_update_delta.m_annotations.setdefault('mapping'
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_thermostat],
+        [h5md_path_thermostat],
         dict(key='temperature_update_delta'),
     )
 )
@@ -619,7 +631,7 @@ ThermostatParameters.temperature_update_factor.m_annotations.setdefault('mapping
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_thermostat],
+        [h5md_path_thermostat],
         dict(key='temperature_update_factor'),
     )
 )
@@ -628,7 +640,7 @@ ThermostatParameters.step_start.m_annotations.setdefault('mapping', {})['hdf5'] 
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_thermostat],
+            [h5md_path_thermostat],
             dict(key='step_start'),
         )
     )
@@ -638,7 +650,7 @@ ThermostatParameters.step_end.m_annotations.setdefault('mapping', {})['hdf5'] = 
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_thermostat],
+            [h5md_path_thermostat],
             dict(key='step_end'),
         )
     )
@@ -649,13 +661,13 @@ class BarostatParameters(molecular_dynamics.BarostatParameters):
     pass
 
 
-path_barostat = f'{path_md}.barostat_parameters'
+h5md_path_barostat = f'{h5md_path_md}.barostat_parameters'
 
 BarostatParameters.barostat_type.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_barostat],
+            [h5md_path_barostat],
             dict(key='barostat_type'),
         )
     )
@@ -665,7 +677,7 @@ BarostatParameters.coupling_type.m_annotations.setdefault('mapping', {})['hdf5']
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_barostat],
+            [h5md_path_barostat],
             dict(key='coupling_type'),
         )
     )
@@ -676,7 +688,7 @@ BarostatParameters.reference_pressure.m_annotations.setdefault('mapping', {})[
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_barostat],
+        [h5md_path_barostat],
         dict(key='reference_pressure'),
     )
 )
@@ -685,7 +697,7 @@ BarostatParameters.coupling_constant.m_annotations.setdefault('mapping', {})['hd
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_barostat],
+            [h5md_path_barostat],
             dict(key='coupling_constant'),
         )
     )
@@ -695,7 +707,7 @@ BarostatParameters.compressibility.m_annotations.setdefault('mapping', {})['hdf5
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_barostat],
+            [h5md_path_barostat],
             dict(key='compressibility'),
         )
     )
@@ -705,7 +717,7 @@ BarostatParameters.pressure_profile.m_annotations.setdefault('mapping', {})['hdf
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_barostat],
+            [h5md_path_barostat],
             dict(key='pressure_profile'),
         )
     )
@@ -716,7 +728,7 @@ BarostatParameters.reference_pressure_start.m_annotations.setdefault('mapping', 
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_barostat],
+        [h5md_path_barostat],
         dict(key='reference_pressure_start'),
     )
 )
@@ -726,7 +738,7 @@ BarostatParameters.reference_pressure_end.m_annotations.setdefault('mapping', {}
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_barostat],
+        [h5md_path_barostat],
         dict(key='reference_pressure_end'),
     )
 )
@@ -736,7 +748,7 @@ BarostatParameters.pressure_update_frequency.m_annotations.setdefault('mapping',
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_barostat],
+        [h5md_path_barostat],
         dict(key='pressure_update_frequency'),
     )
 )
@@ -746,7 +758,7 @@ BarostatParameters.pressure_update_delta.m_annotations.setdefault('mapping', {})
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_barostat],
+        [h5md_path_barostat],
         dict(key='pressure_update_delta'),
     )
 )
@@ -756,7 +768,7 @@ BarostatParameters.pressure_update_factor.m_annotations.setdefault('mapping', {}
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_barostat],
+        [h5md_path_barostat],
         dict(key='pressure_update_factor'),
     )
 )
@@ -765,7 +777,7 @@ BarostatParameters.step_start.m_annotations.setdefault('mapping', {})['hdf5'] = 
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_barostat],
+            [h5md_path_barostat],
             dict(key='step_start'),
         )
     )
@@ -775,7 +787,7 @@ BarostatParameters.step_end.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_barostat],
+            [h5md_path_barostat],
             dict(key='step_end'),
         )
     )
@@ -786,13 +798,13 @@ class ShearParameters(molecular_dynamics.ShearParameters):
     pass
 
 
-path_shear = f'{path_md}.shear_parameters'
+h5md_path_shear = f'{h5md_path_md}.shear_parameters'
 
 ShearParameters.shear_type.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_shear],
+            [h5md_path_shear],
             dict(key='shear_type'),
         )
     )
@@ -802,7 +814,7 @@ ShearParameters.shear_rate.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_shear],
+            [h5md_path_shear],
             dict(key='shear_rate'),
         )
     )
@@ -812,7 +824,7 @@ ShearParameters.step_start.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_shear],
+            [h5md_path_shear],
             dict(key='step_start'),
         )
     )
@@ -822,7 +834,7 @@ ShearParameters.step_end.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_shear],
+            [h5md_path_shear],
             dict(key='step_end'),
         )
     )
@@ -835,14 +847,14 @@ class FreeEnergyCalculationParameters(
     pass
 
 
-path_FEC = f'{path_md}.free_energy_calculation_parameters'
+h5md_path_FEC = f'{h5md_path_md}.free_energy_calculation_parameters'
 
 # TODO Change this to fec_type in the schema
 FreeEnergyCalculationParameters.type.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_shear],
+            [h5md_path_FEC],
             dict(key='type'),
         )
     )
@@ -853,7 +865,7 @@ FreeEnergyCalculationParameters.lambda_index.m_annotations.setdefault('mapping',
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_shear],
+        [h5md_path_FEC],
         dict(key='lambda_index'),
     )
 )
@@ -863,7 +875,7 @@ FreeEnergyCalculationParameters.atom_indices.m_annotations.setdefault('mapping',
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_shear],
+        [h5md_path_FEC],
         dict(key='atom_indices'),
     )
 )
@@ -873,7 +885,7 @@ FreeEnergyCalculationParameters.initial_state_vdw.m_annotations.setdefault(
 )['hdf5'] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_shear],
+        [h5md_path_FEC],
         dict(key='initial_state_vdw'),
     )
 )
@@ -883,7 +895,7 @@ FreeEnergyCalculationParameters.final_state_vdw.m_annotations.setdefault('mappin
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_shear],
+        [h5md_path_FEC],
         dict(key='final_state_vdw'),
     )
 )
@@ -893,7 +905,7 @@ FreeEnergyCalculationParameters.initial_state_coloumb.m_annotations.setdefault(
 )['hdf5'] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_shear],
+        [h5md_path_FEC],
         dict(key='initial_state_coloumb'),
     )
 )
@@ -903,7 +915,7 @@ FreeEnergyCalculationParameters.final_state_coloumb.m_annotations.setdefault(
 )['hdf5'] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_shear],
+        [h5md_path_FEC],
         dict(key='final_state_coloumb'),
     )
 )
@@ -913,7 +925,7 @@ FreeEnergyCalculationParameters.initial_state_bonded.m_annotations.setdefault(
 )['hdf5'] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_shear],
+        [h5md_path_FEC],
         dict(key='initial_state_bonded'),
     )
 )
@@ -923,7 +935,7 @@ FreeEnergyCalculationParameters.final_state_bonded.m_annotations.setdefault(
 )['hdf5'] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_shear],
+        [h5md_path_FEC],
         dict(key='final_state_bonded'),
     )
 )
@@ -939,11 +951,14 @@ class Lambdas(molecular_dynamics.Lambdas):
     pass
 
 
+# ? Not sure about where this info is going in h5md
+h5md_path_lambdas = f'{h5md_path_FEC}.lambdas'
+
 # TODO lambda_type?
 Lambdas.type.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_shear],
+        [h5md_path_lambdas],
         dict(key='type'),
     )
 )
@@ -951,7 +966,7 @@ Lambdas.type.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
 Lambdas.value.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_shear],
+        [h5md_path_lambdas],
         dict(key='value'),
     )
 )
@@ -961,14 +976,12 @@ class MolecularDynamicsMethod(molecular_dynamics.MolecularDynamicsMethod):
     pass
 
 
-path_md = 'parameters.workflow.molecular_dynamics'
-
 MolecularDynamicsMethod.thermodynamic_ensemble.m_annotations.setdefault('mapping', {})[
     'hdf5'
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_md],
+        [h5md_path_md],
         dict(key='thermodynamic_ensemble'),
     )
 )
@@ -978,7 +991,7 @@ MolecularDynamicsMethod.integrator_type.m_annotations.setdefault('mapping', {})[
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_md],
+        [h5md_path_md],
         dict(key='integrator_type'),
     )
 )
@@ -988,7 +1001,7 @@ MolecularDynamicsMethod.integration_timestep.m_annotations.setdefault('mapping',
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_md],
+        [h5md_path_md],
         dict(key='integration_timestep'),
     )
 )
@@ -997,7 +1010,7 @@ MolecularDynamicsMethod.n_steps.m_annotations.setdefault('mapping', {})['hdf5'] 
     MapperAnnotation(
         mapper=(
             'map_value',
-            [path_md],
+            [h5md_path_md],
             dict(key='n_steps'),
         )
     )
@@ -1008,7 +1021,7 @@ MolecularDynamicsMethod.coordinate_save_frequency.m_annotations.setdefault(
 )['hdf5'] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_md],
+        [h5md_path_md],
         dict(key='coordinate_save_frequency'),
     )
 )
@@ -1018,7 +1031,7 @@ MolecularDynamicsMethod.velocity_save_frequency.m_annotations.setdefault('mappin
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_md],
+        [h5md_path_md],
         dict(key='velocity_save_frequency'),
     )
 )
@@ -1028,7 +1041,7 @@ MolecularDynamicsMethod.force_save_frequency.m_annotations.setdefault('mapping',
 ] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_md],
+        [h5md_path_md],
         dict(key='force_save_frequency'),
     )
 )
@@ -1038,7 +1051,7 @@ MolecularDynamicsMethod.thermodynamics_save_frequency.m_annotations.setdefault(
 )['hdf5'] = MapperAnnotation(
     mapper=(
         'map_value',
-        [path_md],
+        [h5md_path_md],
         dict(key='thermodynamics_save_frequency'),
     )
 )
@@ -1064,13 +1077,36 @@ MolecularDynamicsMethod.free_energy_calculation_parameters.m_annotations.setdefa
 ## WORKFLOW.RESULTS --> archive.workflow2.results
 
 
+class RadialDistributionFunctionValues(
+    molecular_dynamics.RadialDistributionFunctionValues
+):
+    pass
+
+
+# ! Should be something like this but first need to
+# TODO flatten property structures in MD schema
+# TODO implement observable_type to be passed in the annotation
+RadialDistributionFunctionValues.value.m_annotations.setdefault('mapping', {})[
+    'hdf5'
+] = MapperAnnotation(
+    mapper=(
+        'get_output_data',
+        ['.@'],
+        dict(
+            path='observables.radial_distribution_functions',
+            observable_type='ensemble_average',
+        ),
+    )
+)
+
+
 class MolecularDynamicsResults(molecular_dynamics.MolecularDynamicsResults):
     pass
 
 
-MolecularDynamicsResults.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    MapperAnnotation(mapper=('get_output_data', ['observables']))
-)
+# MolecularDynamicsResults.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(mapper=('get_output_data', ['observables']))
+# )
 
 # ? These quantities from normalization?
 #     finished_normally = Quantity(
