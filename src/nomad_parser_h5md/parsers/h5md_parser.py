@@ -232,7 +232,6 @@ class H5MDH5Parser(HDF5Parser):
                 f'for {source.keys()},skipping this observable.'
             )
             return
-        print(source.keys())
 
         source_data = self.get_source(self.data, kwargs['path'])
         if source_data.get('@type') != observable_type:

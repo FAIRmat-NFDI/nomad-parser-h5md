@@ -129,6 +129,7 @@ def test_md(parser):
     assert sec_outputs[2].total_forces[0].value[11].to('newton').magnitude == approx(
         500.0
     )
+    print(sec_outputs[2].total_forces[0].contributions)
     assert sec_outputs[2].total_forces[0].contributions[0].name == 'custom'
     assert sec_outputs[2].total_forces[0].contributions[0].value[21].to(
         'newton'

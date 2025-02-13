@@ -331,32 +331,82 @@ TotalEnergy.contributions.m_annotations.setdefault('mapping', {})['hdf5'] = (
 )
 
 
-# TODO move these base definitions to nomad-simulations
-class ForceContribution(ArchiveSection):
-    """
-    Abstract class used to define a common `value` quantity with the appropriate units
-    for different types of forces, which avoids repeating the definitions for each
-    force class.
-    """
+# This was for when PP had checks
+# # TODO move these base definitions to nomad-simulations
+# class ForceContribution(ArchiveSection):
+#     """
+#     Abstract class used to define a common `value` quantity with the appropriate units
+#     for different types of forces, which avoids repeating the definitions for each
+#     force class.
+#     """
 
-    name = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Name of the parameter.
-        """,
-    )
+#     name = Quantity(
+#         type=str,
+#         shape=[],
+#         description="""
+#         Name of the parameter.
+#         """,
+#     )
 
-    value = Quantity(
-        type=np.float64,
-        shape=['*', 3],
-        unit='newton',
-        description="""
-        """,
-    )
+#     value = Quantity(
+#         type=np.float64,
+#         shape=['*', 3],
+#         unit='newton',
+#         description="""
+#         """,
+#     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
+#     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+#         super().normalize(archive, logger)
+
+
+# ForceContribution.name.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(mapper='.name')
+# )
+
+
+# class TotalForce(ForceContribution):
+#     """
+#     The total force on a system. `contributions` specify individual force
+#     contributions to the `TotalForce`.
+#     """
+
+#     contributions = SubSection(sub_section=ForceContribution.m_def, repeats=True)
+
+#     def __init__(
+#         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
+#     ) -> None:
+#         super().__init__(m_def, m_context, **kwargs)
+#         self.name = self.m_def.name
+
+#     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+#         super().normalize(archive, logger)
+
+
+# TotalForce.value.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+#     mapper=(
+#         'get_output_data',
+#         ['.@'],
+#         dict(path='observables.forces.total', observable_type='configurational'),
+#     )
+# )
+
+# ### SUBSECTIONS
+
+# TotalForce.contributions.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(
+#         mapper=(
+#             'get_contributions',
+#             ['.@'],
+#             dict(path='observables.forces', exclude=['total']),
+#         )
+#     )
+# )
+
+
+## TEST PP without validations
+class ForceContribution(properties.forces.ForceContribution):
+    pass
 
 
 ForceContribution.name.m_annotations.setdefault('mapping', {})['hdf5'] = (
@@ -364,22 +414,8 @@ ForceContribution.name.m_annotations.setdefault('mapping', {})['hdf5'] = (
 )
 
 
-class TotalForce(ForceContribution):
-    """
-    The total force on a system. `contributions` specify individual force
-    contributions to the `TotalForce`.
-    """
-
-    contributions = SubSection(sub_section=ForceContribution.m_def, repeats=True)
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
+class TotalForce(properties.TotalForce):
+    pass
 
 
 TotalForce.value.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
