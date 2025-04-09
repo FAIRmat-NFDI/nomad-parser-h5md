@@ -34,13 +34,15 @@ from simulationworkflowschema import MolecularDynamics
 from nomad_simulations.schema_packages.outputs import (
     TotalEnergy,
     TotalForce,
-    TrajectoryOutputs,
 )
 from nomad_simulations.schema_packages.properties.energies import EnergyContribution
 from nomad_simulations.schema_packages.properties.forces import ForceContribution
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
+
+# h5md schema
+from nomad_parser_h5md.schema_packages.schema import TrajectoryOutputs
 
 
 class MDParser(Parser):

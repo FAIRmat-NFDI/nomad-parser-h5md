@@ -47,9 +47,8 @@ from nomad_parser_h5md.schema_packages.schema import (
     TrajectoryOutputs,
     CustomProperty,
     ParamEntry,
-    ForceEntry,
-    EnergyEntry,
-    Stress,
+    # ForceContribution,
+    EnergyContribution,
 )
 
 configuration = config.get_plugin_entry_point(
@@ -753,8 +752,7 @@ class H5MDParser(MDParser):
 
             forces = system_info.get(step, {}).get('forces')
             if forces is not None:
-                pass
-                # data_outputs['total_forces']['value'] = forces
+                data_outputs['total_forces']['value'] = forces
 
             for key, val in outputs_info.get(step).items():
                 key_split = key.split('-')
@@ -774,12 +772,12 @@ class H5MDParser(MDParser):
                     )
                 elif 'force' in key:
                     if 'forces' not in key:
-                        key.replace('force', 'forces')
-
-                    pass
-                    # data_outputs['total_forces']['contributions'].append(
-                    #     {'name': observable_label, 'value': val}
-                    # )
+                        key.replace(
+                            'force', 'forces'
+                        )  # ? Change observable label instead?
+                    data_outputs['total_forces']['contributions'].append(
+                        {'name': observable_label, 'value': val}
+                    )
                 elif hasattr(TrajectoryOutputs, observable_label):
                     data_outputs[observable_label] = {'value': val}
                 else:
@@ -800,7 +798,7 @@ class H5MDParser(MDParser):
                 simulation.outputs.append(output)
 
             for output_entry in data_h5md['x_h5md_custom_calculations']:
-                output.x_h5md_custom_outputs.append(output_entry)
+                output.custom_outputs.append(output_entry)
             if (
                 len(output.total_energies) == 0
                 and data_h5md['x_h5md_energy_contributions']

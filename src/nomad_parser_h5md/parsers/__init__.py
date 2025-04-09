@@ -11,12 +11,13 @@ class EntryPoint(ParserEntryPoint):
         This class must have a function `def parse(self, mainfile, archive, logger)`.
     """
     )
-    code_name: Optional[str]
-    code_homepage: Optional[str]
-    code_category: Optional[str]
+    code_name: Optional[str] = None
+    code_homepage: Optional[str] = None
+    code_category: Optional[str] = None
     metadata: Optional[dict] = Field(
+        None,
         description="""
-        Metadata passed to the UI. Deprecated. """
+        Metadata passed to the UI. Deprecated. """,
     )
 
     def load(self):
@@ -34,7 +35,8 @@ h5md_parser_entry_point = EntryPoint(
     mainfile_contents_dict={'__has_all_keys': ['h5md']},
     mainfile_mime_re='(application/x-hdf)',
     mainfile_name_re=r'^.*\.(h5|hdf5)$',
-    parser_class_name='nomad_parser_h5md.parsers.parser.H5MDParser',
+    parser_class_name='nomad_parser_h5md.parsers.h5md_parser.H5MDParser',  # for running mapping parser with nomad parse
+    # parser_class_name='nomad_parser_h5md.parsers.parser.H5MDParser', # for running legacy-type parsing with nomad parse
     code_name='H5MD',
     code_category='MD code',
     metadata={
