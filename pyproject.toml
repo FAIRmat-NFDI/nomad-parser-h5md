@@ -25,7 +25,10 @@ maintainers = [
     { name = "Joseph Rudzinski", email = "joseph.rudzinski@physik.hu-berlin.de" },
 ]
 license = { file = "LICENSE" }
-dependencies = ["nomad-simulations", "nomad-schema-plugin-simulation-workflow"]
+dependencies = [
+    "nomad-simulations",
+    "nomad-schema-plugin-simulation-workflow",
+]
 
 [project.urls]
 Repository = "https://github.com/FAIRmat-NFDI/nomad-parser-h5md"

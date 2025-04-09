@@ -46,12 +46,9 @@ class H5MDH5Parser(HDF5Parser):
         self,
         particlesgroup: {},
     ) -> List[Dict[str, Any]]:
-        print('in system hierarchy')
         data = []
         for key, dct in particlesgroup.items():
             data.append(dct)
-            print(key)
-            print(h5md_sec_particlesgroup[key]['label'])
             path_particlesgroup_key = f'{path_particlesgroup}.{key}'
 
             particles_group = {
@@ -65,7 +62,6 @@ class H5MDH5Parser(HDF5Parser):
                 group_key: self.data.get(f'{path_particlesgroup_key}.{group_key}')
                 for group_key in h5md_sec_particlesgroup[key].keys()
             }
-            print(particles_group)
             data['branch_label'] = particles_group.pop('label', None)
             data['atom_indices'] = particles_group.pop('indices', None)
             # TODO remove the deprecated below from the test file
@@ -285,7 +281,6 @@ class H5MDH5Parser(HDF5Parser):
     def get_md_parameters(
         self, source: Dict[str, Any], **kwargs
     ) -> List[Dict[str, Any]]:
-        print('in get md parameters')
         if kwargs.get('path') is None:
             return []
 
