@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import Any
 import pint
 
 from nomad.parsing.file_parser.mapping_parser import HDF5Parser, MetainfoParser, Path
@@ -10,11 +10,11 @@ from h5py import Group
 
 
 class H5MDH5Parser(HDF5Parser):
-    trajectory_steps: List[int] = []
-    output_steps: List[int] = []
-    observables: Dict[str, Any] = {}
+    trajectory_steps: list[int] = []
+    output_steps: list[int] = []
+    observables: dict[str, Any] = {}
 
-    def get_value(self, name: str, dct: Dict[str, Any]) -> Any:
+    def get_value(self, name: str, dct: dict[str, Any]) -> Any:
         value = dct.get(name, {})
         if not isinstance(value, dict):
             return value
@@ -29,14 +29,14 @@ class H5MDH5Parser(HDF5Parser):
             value = value * factor
         return value
 
-    def get_source(self, parent: Dict[str, Any], path: str):
+    def get_source(self, parent: dict[str, Any], path: str):
         path_segments = path.split('.', 1)
         source = parent.get(path_segments[0], {})
         if len(path_segments) == 1:
             return source
         return self.get_source(source, path_segments[1])
 
-    def map_value(self, source: Dict[str, Any], **kwargs) -> Any:
+    def map_value(self, source: dict[str, Any], **kwargs) -> Any:
         if kwargs.get('key') is None:
             return None
 
@@ -45,7 +45,7 @@ class H5MDH5Parser(HDF5Parser):
     def get_system_hierarchy(
         self,
         particlesgroup: {},
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         data = []
         for key, dct in particlesgroup.items():
             data.append(dct)
@@ -92,7 +92,7 @@ class H5MDH5Parser(HDF5Parser):
 
         return []
 
-    def get_system_steps(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_system_steps(self, source: dict[str, Any]) -> list[dict[str, Any]]:
         steps = self.get_value('step', source)
         times = self.get_value('time', source)
         system_steps = [
@@ -112,7 +112,7 @@ class H5MDH5Parser(HDF5Parser):
         # system_steps[system_steps.keys()[0]]['model_system'] = hierarchy
         return system_steps
 
-    def get_step_data(self, data: Dict[str, Any], step: int) -> Dict[str, Any]:
+    def get_step_data(self, data: dict[str, Any], step: int) -> dict[str, Any]:
         step_data = {}
         value = self.get_value('value', data)
         steps = self.get_value('step', data)
@@ -124,15 +124,13 @@ class H5MDH5Parser(HDF5Parser):
         step_data['time'] = times[index]
         return step_data
 
-    def get_system_data(self, source: Dict[str, Any]) -> Dict[str, Any]:
+    def get_cell_data(self, source: dict[str, Any]) -> dict[str, Any]:
         particles = self.data.get('particles', {}).get('all')
         if particles is None:
             return {}
 
         source_paths = [
-            ('positions', 'position'),
             ('lattice_vectors', 'box.edges'),
-            ('velocities', 'velocity'),
         ]
         system_data = {}
         for name, path in source_paths:
@@ -150,13 +148,72 @@ class H5MDH5Parser(HDF5Parser):
 
         return system_data
 
-    def to_species_labels(self, source: List[str]) -> List[Dict[str, Any]]:
-        return [{'label': s} for s in source]
+    def get_traj_data(self, source: dict[str, Any], **kwargs) -> pint.Quantity:
+        print('in get_traj_data')
+        print(source.get('step'))
+        print(source.keys())
+        # if source.get('step') is None:
+        #     return
 
-    def get_output_steps(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
+        # print(self.get_step_data(source, source['step']).get('value'))
+        # return self.get_step_data(source, source['step']).get('value')
+        # TODO - check to see if this function can be combined with get_output_data
+        if source.get('value') is not None:
+            return source['value']
+        if source.get('step') is None or kwargs.get('path') is None:
+            return
+
+        source_data = self.get_source(self.data, kwargs['path'])
+
+        print(f'source_data.keys(): {source_data.keys()}')
+        print(f'len(source_data.value): {len(source_data.get("value"))}')
+        import numpy as np
+
+        print(np.array(source_data.get('value')).shape)
+        # print(f'len(source_data.value[0]): {len(source_data.get("value")[0])}')
+        # print(f'source_data.value: {source_data.get("value")}')
+        print(
+            f'self.get_step_data(source_data, source["step"]): {self.get_step_data(source_data, source["step"])}'
+        )
+        data = self.get_step_data(source_data, source['step']).get('value')
+        print(f'data: {data}')
+        print(f'len(data): {len(data)}')
+        print(f'np.array(data).shape: {np.array(data.magnitude).shape}')
+        return data
+
+    def get_system_data(self, source: dict[str, Any]) -> dict[str, Any]:
+        print('in get_system_data')
+        particles = self.data.get('particles', {}).get('all')
+        if particles is None:
+            return {}
+
+        source_paths = [
+            ('positions', 'position'),
+            ('velocities', 'velocity'),
+        ]
+        system_data = {}
+        # TODO - could extract this into a helper function also for get_cell_data
+        for name, path in source_paths:
+            data = self.get_source(particles, path)
+            if data is None:
+                continue
+            step_data = self.get_step_data(data, source.get('step'))
+            if not step_data:
+                continue
+            system_data.setdefault('time', step_data['time'])
+            if step_data['time'] == system_data['time']:
+                system_data[name] = step_data['value']
+
+        return system_data
+
+    def to_species_labels(self, source: list[str]) -> list[dict[str, Any]]:
+        print('in to_species_labels')
+        return [{'chemical_symbol': s, 'label': s} for s in source]
+
+    def get_output_steps(self, source: dict[str, Any]) -> list[dict[str, Any]]:
         output_steps = {}
 
-        def get_steps(dct: Dict[str, Any]) -> Dict[str, Any]:
+        def get_steps(dct: dict[str, Any]) -> dict[str, Any]:
             steps = self.get_value('step', dct)
             if steps is None:
                 return {}
@@ -169,7 +226,7 @@ class H5MDH5Parser(HDF5Parser):
             return {step: times[n] for n, step in enumerate(steps)}
 
         def get_observable_steps(
-            source: Dict[str, Any], output_steps: Dict[str, Any]
+            source: dict[str, Any], output_steps: dict[str, Any]
         ) -> None:
             for __, val in source.items():
                 observable_type = val.get('@type')
@@ -196,8 +253,8 @@ class H5MDH5Parser(HDF5Parser):
         return output_steps
 
     def get_contributions(
-        self, source: Dict[str, Any], **kwargs
-    ) -> List[Dict[str, Any]]:
+        self, source: dict[str, Any], **kwargs
+    ) -> list[dict[str, Any]]:
         if kwargs.get('path') is None or source.get('step') is None:
             return []
 
@@ -212,7 +269,7 @@ class H5MDH5Parser(HDF5Parser):
             contributions.append({'name': key, **step_data})
         return contributions
 
-    def get_output_data(self, source: Dict[str, Any], **kwargs) -> pint.Quantity:
+    def get_output_data(self, source: dict[str, Any], **kwargs) -> pint.Quantity:
         if source.get('value') is not None:
             return source['value']
         if source.get('step') is None or kwargs.get('path') is None:
@@ -232,11 +289,13 @@ class H5MDH5Parser(HDF5Parser):
         source_data = self.get_source(self.data, kwargs['path'])
         if source_data.get('@type') != observable_type:
             return
+        print('in get_output_data')
+        print(f'source_step: {source.get("step")}')
         return self.get_step_data(source_data, source['step']).get('value')
 
     def get_custom_outputs(
-        self, source: Dict[str, Any], **kwargs
-    ) -> List[Dict[str, Any]]:
+        self, source: dict[str, Any], **kwargs
+    ) -> list[dict[str, Any]]:
         if kwargs.get('path') is None or source.get('step') is None:
             return []
 
@@ -260,8 +319,8 @@ class H5MDH5Parser(HDF5Parser):
             custom_outputs.append({'name': key, **step_data})
         return custom_outputs
 
-    # def get_parameters(self, parameter_group: Group, path: str) -> Dict:
-    #     param_dict: Dict[Any, Any] = {}
+    # def get_parameters(self, parameter_group: Group, path: str) -> dict:
+    #     param_dict: dict[Any, Any] = {}
     #     for key, val in parameter_group.items():
     #         path_key = f'{path}.{key}'
     #         if isinstance(val, Group):
@@ -279,8 +338,8 @@ class H5MDH5Parser(HDF5Parser):
     #     return param_dict
 
     def get_md_parameters(
-        self, source: Dict[str, Any], **kwargs
-    ) -> List[Dict[str, Any]]:
+        self, source: dict[str, Any], **kwargs
+    ) -> list[dict[str, Any]]:
         if kwargs.get('path') is None:
             return []
 
@@ -339,3 +398,6 @@ class H5MDParser(MDParser):
         self.h5_parser.close()
 
         self.simulation_parser.close()
+
+
+# TODO: remove mapping annotations
