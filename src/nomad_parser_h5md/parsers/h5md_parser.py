@@ -179,6 +179,7 @@ class H5MDH5Parser(HDF5Parser):
         print(f'data: {data}')
         print(f'len(data): {len(data)}')
         print(f'np.array(data).shape: {np.array(data.magnitude).shape}')
+        print(f'type(data): {type(data.magnitude)}')
         return data
 
     def get_system_data(self, source: dict[str, Any]) -> dict[str, Any]:
@@ -289,9 +290,17 @@ class H5MDH5Parser(HDF5Parser):
         source_data = self.get_source(self.data, kwargs['path'])
         if source_data.get('@type') != observable_type:
             return
+
+        data = self.get_step_data(source_data, source['step']).get('value')
         print('in get_output_data')
         print(f'source_step: {source.get("step")}')
-        return self.get_step_data(source_data, source['step']).get('value')
+        print(f'output data: {data}')
+        print(f'len(data): {len(data)}')
+        import numpy as np
+
+        print(f'np.array(data).shape: {np.array(data.magnitude).shape}')
+        print(f'type(data): {type(data.magnitude)}')
+        return data
 
     def get_custom_outputs(
         self, source: dict[str, Any], **kwargs

@@ -211,13 +211,13 @@ class ModelSystem(model_system.ModelSystem):
 # )
 
 # TODO inconsistent? shape with original def
-model_system.ModelSystem.bond_list.m_annotations.setdefault('mapping', {})['hdf5'] = (
+ModelSystem.bond_list.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper='connectivity.bonds')
 )
 
-model_system.ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})[
-    'hdf5'
-] = MapperAnnotation(mapper=r'particles.all.box."@dimension"')
+ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(mapper=r'particles.all.box."@dimension"')
+)
 
 # ModelSystem.positions.m_annotations.setdefault('mapping', {})['hdf5'] = (
 #     MapperAnnotation(mapper='.positions')
@@ -228,7 +228,7 @@ model_system.ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})[
 # ModelSystem.positions.m_annotations.setdefault('mapping', {})['hdf5'] = (
 #     MapperAnnotation(mapper=('get_traj_data', ['particles.all.position']))
 # )
-model_system.ModelSystem.positions.m_annotations.setdefault('mapping', {})['hdf5'] = (
+ModelSystem.positions.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
         mapper=(
             'get_traj_data',
@@ -238,12 +238,12 @@ model_system.ModelSystem.positions.m_annotations.setdefault('mapping', {})['hdf5
     )
 )
 
-model_system.ModelSystem.velocities.m_annotations.setdefault('mapping', {})['hdf5'] = (
+ModelSystem.velocities.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper='.velocities')
 )
 
 # TODO length of positions in section data does not work
-model_system.ModelSystem.n_particles.m_annotations.setdefault('mapping', {})['hdf5'] = (
+ModelSystem.n_particles.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper='length(particles.all.position.value.__value | [0])')
 )
 
@@ -531,47 +531,47 @@ class TrajectoryOutputs(outputs.TrajectoryOutputs):
     total_forces = SubSection(sub_section=TotalForce.m_def, repeats=True)
 
 
-outputs.TrajectoryOutputs.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
+TrajectoryOutputs.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper=('get_output_steps', ['observables']))
 )
 
-outputs.TrajectoryOutputs.step.m_annotations.setdefault('mapping', {})['hdf5'] = (
+TrajectoryOutputs.step.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper='.step')
 )
 
-outputs.TrajectoryOutputs.time.m_annotations.setdefault('mapping', {})['hdf5'] = (
+TrajectoryOutputs.time.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper='.time')
 )
 
 ### SUBSECTIONS
 
-outputs.TrajectoryOutputs.total_energies.m_annotations.setdefault('mapping', {})[
-    'hdf5'
-] = MapperAnnotation(mapper='.@')
+TrajectoryOutputs.total_energies.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(mapper='.@')
+)
 
-outputs.TrajectoryOutputs.total_forces.m_annotations.setdefault('mapping', {})[
-    'hdf5'
-] = MapperAnnotation(mapper='.@')
+TrajectoryOutputs.total_forces.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(mapper='.@')
+)
 
-outputs.TrajectoryOutputs.temperatures.m_annotations.setdefault('mapping', {})[
-    'hdf5'
-] = MapperAnnotation(mapper='.@')
+TrajectoryOutputs.temperatures.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(mapper='.@')
+)
 
-outputs.TrajectoryOutputs.custom_outputs.m_annotations.setdefault('mapping', {})[
-    'hdf5'
-] = MapperAnnotation(
-    mapper=(
-        'get_custom_outputs',
-        ['.@'],
-        dict(
-            path='observables',
-            exclude=[
-                'energies',
-                'temperatures',
-                'custom_forces',
-            ],  # TODO get the exclusion list automatically
-            observable_type='configurational',
-        ),
+TrajectoryOutputs.custom_outputs.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(
+        mapper=(
+            'get_custom_outputs',
+            ['.@'],
+            dict(
+                path='observables',
+                exclude=[
+                    'energies',
+                    'temperatures',
+                    'custom_forces',
+                ],  # TODO get the exclusion list automatically
+                observable_type='configurational',
+            ),
+        )
     )
 )
 
@@ -605,16 +605,18 @@ class Simulation(general.Simulation):
         mapper='h5md.creator'
     )
 
+    model_system = SubSection(sub_section=ModelSystem.m_def, repeats=True)
 
-general.Simulation.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    MapperAnnotation(mapper='@')
+
+Simulation.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+    mapper='@'
 )
 
-general.Simulation.program.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    MapperAnnotation(mapper='h5md.program')
+Simulation.program.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+    mapper='h5md.program'
 )
 
-general.Simulation.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
+Simulation.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper=('get_system_steps', ['particles.all.position']))
 )
 
