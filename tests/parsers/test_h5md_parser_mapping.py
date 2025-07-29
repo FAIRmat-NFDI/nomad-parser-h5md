@@ -58,11 +58,8 @@ def test_md(parser):
     ## SYSTEM
     sec_systems = sec_simulation.model_system
     assert len(sec_systems) == 5
-    print([system for system in sec_systems])
-    print(sec_systems[0].cell)
-    print(sec_systems[0].particle_states[100])
-    assert np.shape(sec_systems[0].positions.magnitude) == (31583, 3)
-    assert np.shape(sec_systems[0].velocities.magnitude) == (31583, 3)
+    assert np.shape(sec_systems[0].positions) == (31583, 3)
+    assert np.shape(sec_systems[0].velocities) == (31583, 3)
     assert sec_systems[0].n_particles == 31583
     assert sec_systems[0].particle_states[100].chemical_symbol == 'H'
     assert sec_systems[0].particle_states[100].label == 'H'

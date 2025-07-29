@@ -42,6 +42,15 @@ class H5MDH5Parser(HDF5Parser):
 
         return self.get_value(kwargs.get('key'), source)
 
+    def get_sub_systems(self, source: dict[str, Any], **kwargs) -> list[dict[str, Any]]:
+        # def get_traj_data(self, source: dict[str, Any], **kwargs) -> pint.Quantity:
+        print('in get_sub_systems')
+        print(source)
+        print(source.keys())
+        print(source.items())
+
+        return []
+
     def get_system_hierarchy(
         self,
         particlesgroup: {},
@@ -150,8 +159,9 @@ class H5MDH5Parser(HDF5Parser):
 
     def get_traj_data(self, source: dict[str, Any], **kwargs) -> pint.Quantity:
         print('in get_traj_data')
-        print(source.get('step'))
-        print(source.keys())
+        # print(source.get('step'))
+        # print(source.keys())
+        print(kwargs.get('path'))
         # if source.get('step') is None:
         #     return
 
@@ -165,21 +175,21 @@ class H5MDH5Parser(HDF5Parser):
 
         source_data = self.get_source(self.data, kwargs['path'])
 
-        print(f'source_data.keys(): {source_data.keys()}')
-        print(f'len(source_data.value): {len(source_data.get("value"))}')
-        import numpy as np
+        # print(f'source_data.keys(): {source_data.keys()}')
+        # print(f'len(source_data.value): {len(source_data.get("value"))}')
+        # import numpy as np
 
-        print(np.array(source_data.get('value')).shape)
-        # print(f'len(source_data.value[0]): {len(source_data.get("value")[0])}')
-        # print(f'source_data.value: {source_data.get("value")}')
-        print(
-            f'self.get_step_data(source_data, source["step"]): {self.get_step_data(source_data, source["step"])}'
-        )
+        # print(np.array(source_data.get('value')).shape)
+        # # print(f'len(source_data.value[0]): {len(source_data.get("value")[0])}')
+        # # print(f'source_data.value: {source_data.get("value")}')
+        # print(
+        #     f'self.get_step_data(source_data, source["step"]): {self.get_step_data(source_data, source["step"])}'
+        # )
         data = self.get_step_data(source_data, source['step']).get('value')
-        print(f'data: {data}')
-        print(f'len(data): {len(data)}')
-        print(f'np.array(data).shape: {np.array(data.magnitude).shape}')
-        print(f'type(data): {type(data.magnitude)}')
+        # print(f'data: {data}')
+        # print(f'len(data): {len(data)}')
+        # print(f'np.array(data).shape: {np.array(data.magnitude).shape}')
+        # print(f'type(data): {type(data.magnitude)}')
         return data
 
     def get_system_data(self, source: dict[str, Any]) -> dict[str, Any]:
@@ -208,7 +218,6 @@ class H5MDH5Parser(HDF5Parser):
         return system_data
 
     def to_species_labels(self, source: list[str]) -> list[dict[str, Any]]:
-        print('in to_species_labels')
         return [{'chemical_symbol': s, 'label': s} for s in source]
 
     def get_output_steps(self, source: dict[str, Any]) -> list[dict[str, Any]]:
@@ -292,14 +301,14 @@ class H5MDH5Parser(HDF5Parser):
             return
 
         data = self.get_step_data(source_data, source['step']).get('value')
-        print('in get_output_data')
-        print(f'source_step: {source.get("step")}')
-        print(f'output data: {data}')
-        print(f'len(data): {len(data)}')
-        import numpy as np
+        # print('in get_output_data')
+        # print(f'source_step: {source.get("step")}')
+        # print(f'output data: {data}')
+        # print(f'len(data): {len(data)}')
+        # import numpy as np
 
-        print(f'np.array(data).shape: {np.array(data.magnitude).shape}')
-        print(f'type(data): {type(data.magnitude)}')
+        # print(f'np.array(data).shape: {np.array(data.magnitude).shape}')
+        # print(f'type(data): {type(data.magnitude)}')
         return data
 
     def get_custom_outputs(

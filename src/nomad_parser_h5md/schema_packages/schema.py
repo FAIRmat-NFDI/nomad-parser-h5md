@@ -158,22 +158,9 @@ model_system.AtomicCell.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = 
     MapperAnnotation(mapper=('get_cell_data', ['.@']))
 )
 
-# AtomicCell.positions.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
-#     mapper='.positions'
-# )
-
 model_system.AtomicCell.lattice_vectors.m_annotations.setdefault('mapping', {})[
     'hdf5'
 ] = MapperAnnotation(mapper='.lattice_vectors')
-
-# AtomicCell.velocities.m_annotations.setdefault('mapping', {})['hdf5'] = (
-#     MapperAnnotation(mapper='.velocities')
-# )
-
-# # TODO length of positions in section data does not work
-# AtomicCell.n_atoms.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
-#     mapper='length(particles.all.position.value.__value | [0])'
-# )
 
 model_system.AtomicCell.periodic_boundary_conditions.m_annotations.setdefault(
     'mapping', {}
@@ -239,7 +226,29 @@ ModelSystem.positions.m_annotations.setdefault('mapping', {})['hdf5'] = (
 )
 
 ModelSystem.velocities.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    MapperAnnotation(mapper='.velocities')
+    MapperAnnotation(
+        mapper=(
+            'get_traj_data',
+            ['.@'],
+            dict(path='particles.all.velocity'),
+        )
+    )
+)
+
+# model_system.ModelSystem.sub_systems.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(
+#         mapper=('get_sub_systems', ['.@'], dict(path='connectivity.particles_group'))
+#     )
+# )
+ModelSystem.sub_systems.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    # MapperAnnotation(
+    #     mapper=('get_sub_systems', ['.@'], dict(path='connectivity.particles_group'))
+    # )
+    MapperAnnotation(mapper=('get_sub_systems', ['.@']))
+    # MapperAnnotation(
+    #     mapper=('get_traj_data', ['.@'], dict(path='connectivity.particles_group'))
+    # )
+    # MapperAnnotation(mapper=('get_sub_systems', ['connectivity.particles_group']))
 )
 
 # TODO length of positions in section data does not work
@@ -619,10 +628,6 @@ Simulation.program.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnot
 Simulation.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper=('get_system_steps', ['particles.all.position']))
 )
-
-#### Simulation.method --> ??
-
-#### Simulation.outputs --> TrajectoryOutputs
 
 
 # WORKFLOW --> archive.workflow2
