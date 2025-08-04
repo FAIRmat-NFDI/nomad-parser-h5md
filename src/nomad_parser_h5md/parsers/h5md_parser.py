@@ -62,19 +62,12 @@ class H5MDH5Parser(HDF5Parser):
     def get_sub_systems(self, source: dict[str, Any], **kwargs) -> list[dict[str, Any]]:
         # print('in get_sub_systems')
         step = source.get('step', None)
-        label = source.get('label', None)
-        path = kwargs.get('path', None)
-        # print(f'step: {step}, path: {path}, label: {label}')
-        # if step is None or path is None:
-        #     return []
         if step is not None:
             if step != 0:  # TODO extend to time-dependent bond lists and topologies
                 return []
             source = self.get_source(self.data, kwargs['path'])
-            # source = [val for _, val in source.items()]
 
         particles_group = source.get('particles_group', None)
-        # print(f'particles_group: {particles_group}')
         if particles_group is None:
             return []
 
@@ -85,99 +78,6 @@ class H5MDH5Parser(HDF5Parser):
         )
 
         return source
-        # print(f'type(source): {type(source)}')
-        # print(f'source: {source}')
-        # # print(f'source.keys(): {source.keys()}')
-        # for key, val in source.items():
-        #     print(f'key: {key}, val.keys: {val.keys()}, label: {val.get("label")}')
-
-        # convert source_data / particles_group to a list of dicts recursively
-        # source_data = [val for _, val in source_data.items()]
-        # for item in source_data:
-        #     particles_group = item.pop('particles_group', None)
-        #     if particles_group:
-        #         item[]
-
-        # return [
-        #     {
-        #         'label': 'group_1',
-        #         'formula': 'form(1)',
-        #         'particles_group': [
-        #             {'label': 'mol_1', 'formula': 'mol(1)'},
-        #             {'label': 'mol_2', 'formula': 'mol(2)'},
-        #         ],
-        #     },
-        #     {'label': 'group_2', 'formula': 'form(2)'},
-        #     {'label': 'group_3', 'formula': 'form(3)'},
-        # ]
-        # return [
-        #     [
-        #         {
-        #             'label': 'group_1',
-        #             'formula': 'form(1)',
-        #             # 'particles_group': [
-        #             #     {'label': 'mol_1', 'formula': 'mol(1)'},
-        #             #     {'label': 'mol_2', 'formula': 'mol(2)'},
-        #             # ],
-        #         },
-        #         {
-        #             'label': 'group_1-2',
-        #             'formula': 'form(1-2)',
-        #         },
-        #     ],
-        #     {'label': 'group_2', 'formula': 'form(2)'},
-        #     {'label': 'group_3', 'formula': 'form(3)'},
-        # ]
-
-    # def get_system_hierarchy(
-    #     self,
-    #     particlesgroup: {},
-    # ) -> list[dict[str, Any]]:
-    #     data = []
-    #     for key, dct in particlesgroup.items():
-    #         data.append(dct)
-    #         path_particlesgroup_key = f'{path_particlesgroup}.{key}'
-
-    #         particles_group = {
-    #             group_key: h5md_sec_particlesgroup.get(
-    #                 f'{path_particlesgroup_key}.{group_key}'
-    #             )
-    #             for group_key in h5md_sec_particlesgroup[key].keys()
-    #         }
-
-    #         particles_group = {
-    #             group_key: self.data.get(f'{path_particlesgroup_key}.{group_key}')
-    #             for group_key in h5md_sec_particlesgroup[key].keys()
-    #         }
-    #         data['branch_label'] = particles_group.pop('label', None)
-    #         data['atom_indices'] = particles_group.pop('indices', None)
-    #         # TODO remove the deprecated below from the test file
-    #         data['type'] = particles_group.pop('type', None)  # ? deprecate?
-    #         data['is_molecule'] = particles_group.pop(
-    #             'is_molecule', None
-    #         )  # ? deprecate?
-    #         particles_group.pop('formula', None)  # covered in normalization now
-    #         # write all the standard quantities to the archive
-    #         particles_subgroup = particles_group.pop('particles_group', None)
-
-    #         # set the remaining attributes
-    #         data['custom_system_attributes'] = []
-    #         for particles_group_key in particles_group.keys():
-    #             val = particles_group.get(particles_group_key)
-    #             units = val.units if hasattr(val, 'units') else None
-    #             val = val.magnitude if units is not None else val
-    #             data['custom_system_attributes'].append(
-    #                 {'name': particles_group_key, 'value': val, 'unit': units}
-    #             )
-
-    #         # get the next branch level
-    #         if particles_subgroup:
-    #             self.get_system_hierarchy(
-    #                 particles_subgroup,
-    #                 f'{path_particlesgroup_key}.particles_group',
-    #             )
-
-    #     return []
 
     def get_system_steps(self, source: dict[str, Any]) -> list[dict[str, Any]]:
         steps = self.get_value('step', source)
@@ -188,15 +88,6 @@ class H5MDH5Parser(HDF5Parser):
             if step in self.trajectory_steps
         ]
 
-        # get system hierarchy and store in first step
-        # h5md_sec_particlesgroup = self.data.get('connectivity', {}).get(
-        #     'particles_group'
-        # )
-        # hierarchy = self.get_system_hierarchy(
-        #     h5md_sec_particlesgroup=h5md_sec_particlesgroup,
-        #     path_particlesgroup='connectivity.particles_group',
-        # )
-        # system_steps[system_steps.keys()[0]]['model_system'] = hierarchy
         return system_steps
 
     def get_step_data(self, data: dict[str, Any], step: int) -> dict[str, Any]:
@@ -212,6 +103,8 @@ class H5MDH5Parser(HDF5Parser):
         return step_data
 
     def get_cell_data(self, source: dict[str, Any]) -> dict[str, Any]:
+        if not source.get('step'):
+            return {}
         particles = self.data.get('particles', {}).get('all')
         if particles is None:
             return {}
@@ -236,67 +129,35 @@ class H5MDH5Parser(HDF5Parser):
         return system_data
 
     def get_traj_data(self, source: dict[str, Any], **kwargs) -> pint.Quantity:
-        # print('in get_traj_data')
-        # print(source.get('step'))
-        # print(source.keys())
-        # print(kwargs.get('path'))
-        # if source.get('step') is None:
-        #     return
-
-        # print(self.get_step_data(source, source['step']).get('value'))
-        # return self.get_step_data(source, source['step']).get('value')
         # TODO - check to see if this function can be combined with get_output_data
-        if source.get('value') is not None:
+        if source.get('value') is not None:  # ? Is this needed?
             return source['value']
         if source.get('step') is None or kwargs.get('path') is None:
             return
 
         source_data = self.get_source(self.data, kwargs['path'])
 
-        # print(f'source_data.keys(): {source_data.keys()}')
-        # print(f'len(source_data.value): {len(source_data.get("value"))}')
-        # import numpy as np
-
-        # print(np.array(source_data.get('value')).shape)
-        # # print(f'len(source_data.value[0]): {len(source_data.get("value")[0])}')
-        # # print(f'source_data.value: {source_data.get("value")}')
-        # print(
-        #     f'self.get_step_data(source_data, source["step"]): {self.get_step_data(source_data, source["step"])}'
-        # )
         data = self.get_step_data(source_data, source['step']).get('value')
-        # print(f'data: {data}')
-        # print(f'len(data): {len(data)}')
-        # print(f'np.array(data).shape: {np.array(data.magnitude).shape}')
-        # print(f'type(data): {type(data.magnitude)}')
+
         return data
 
-    def get_system_data(self, source: dict[str, Any]) -> dict[str, Any]:
-        # print('in get_system_data')
-        particles = self.data.get('particles', {}).get('all')
-        if particles is None:
-            return {}
+    def to_species_labels(self, source: list[str], **kwargs) -> list[dict[str, Any]]:
+        if kwargs.get('path') is None or source.get('step') is None:
+            return []
 
-        source_paths = [
-            ('positions', 'position'),
-            ('velocities', 'velocity'),
-        ]
-        system_data = {}
-        # TODO - could extract this into a helper function also for get_cell_data
-        for name, path in source_paths:
-            data = self.get_source(particles, path)
-            if data is None:
-                continue
-            step_data = self.get_step_data(data, source.get('step'))
-            if not step_data:
-                continue
-            system_data.setdefault('time', step_data['time'])
-            if step_data['time'] == system_data['time']:
-                system_data[name] = step_data['value']
+        source_data = self.get_source(self.data, kwargs['path'])
 
-        return system_data
+        return [{'chemical_symbol': s, 'label': s} for s in source_data]
 
-    def to_species_labels(self, source: list[str]) -> list[dict[str, Any]]:
-        return [{'chemical_symbol': s, 'label': s} for s in source]
+    def get_top_system_quantity(
+        self, source: list[str], **kwargs
+    ) -> list[dict[str, Any]]:
+        if kwargs.get('path') is None or source.get('step') is None:
+            return []
+
+        source_data = self.get_source(self.data, kwargs['path'])
+
+        return source_data
 
     def get_output_steps(self, source: dict[str, Any]) -> list[dict[str, Any]]:
         output_steps = {}
@@ -492,9 +353,9 @@ class H5MDParser(MDParser):
             particles_group.pop('is_molecule', None)
             particles_group.pop('formula', None)  # covered in normalization now
             # write all the standard quantities to the archive
-            print(sec_model_system.sub_systems)
+            # print(sec_model_system.sub_systems)
             self.parse_section(data, sec_model_system.sub_systems)
-            print(sec_model_system.sub_systems)
+            # print(sec_model_system.sub_systems)
             particles_subgroup = particles_group.pop('particles_group', None)
 
             # set the remaining attributes

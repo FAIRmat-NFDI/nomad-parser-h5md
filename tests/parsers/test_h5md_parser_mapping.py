@@ -58,49 +58,31 @@ def test_md(parser):
     ## SYSTEM
     sec_systems = sec_simulation.model_system
     assert len(sec_systems) == 5
-    # assert np.shape(sec_systems[0].positions) == (31583, 3)
-    # assert np.shape(sec_systems[0].velocities) == (31583, 3)
+    assert np.shape(sec_systems[0].positions) == (31583, 3)
+    assert np.shape(sec_systems[0].velocities) == (31583, 3)
     # assert sec_systems[0].n_particles == 31583
-    # assert sec_systems[0].particle_states[100].chemical_symbol == 'H'
-    # assert sec_systems[0].particle_states[100].label == 'H'
+    assert sec_systems[0].particle_states[100].chemical_symbol == 'H'
+    assert sec_systems[0].particle_states[100].label == 'H'
 
-    # assert sec_systems[2].positions[800][1].to('angstrom').magnitude == approx(
-    #     26.860575
-    # )
-    # assert sec_systems[2].velocities[1200][2].to('angstrom/ps').magnitude == approx(
-    #     400.0
-    # )
-    # assert sec_systems[3].cell[0].lattice_vectors[2][2].to(
-    #     'angstrom'
-    # ).magnitude == approx(68.22318)
+    assert sec_systems[2].positions[800][1].to('angstrom').magnitude == approx(
+        26.860575
+    )
+    assert sec_systems[2].velocities[1200][2].to('angstrom/ps').magnitude == approx(
+        400.0
+    )
+    assert sec_systems[3].cell[0].lattice_vectors[2][2].to(
+        'angstrom'
+    ).magnitude == approx(68.22318)
     # assert sec_systems[3].cell[0].periodic_boundary_conditions == [True, True, True]
     # # assert sec_systems[0].particle_states[200].atom_indices[0] == 200
-    # assert sec_systems[0].bond_list[200][0] == 198
+    assert sec_systems[0].bond_list[200][0] == 198
     # assert sec_systems[0].dimensionality == 3
 
     ## SYSTEM HIERARCHY
     sec_atoms_group = sec_systems[0].sub_systems
-    # assert len(sec_atoms_group) == 4
-    # assert sec_atoms_group[0].name == 'group_1ZNF'
-    # assert sec_atoms_group[0].composition_formula = ''
-    # # assert sec_atoms_group[0].atom_indices[159] == 159
-    # sec_proteins = sec_atoms_group[0].sub_systems
-    # assert len(sec_proteins) == 1
-    # assert sec_proteins[0].name == '1ZNF'
-    # # assert sec_proteins[0].atom_indices[400] == 400
-    # sec_res_group = sec_proteins[0].sub_systems
-    # assert len(sec_res_group) == 16
-    # assert sec_res_group[14].name == 'group_SER'
-    # # assert sec_res_group[14].atom_indices[2] == 136
-    # sec_res = sec_res_group[14].sub_systems
-    # assert len(sec_res) == 3
-    # assert sec_res[0].name == 'SER'
-    # assert sec_res[0].atom_indices[10] == 144
-    # assert sec_res[0].custom_system_attributes[0].name == 'hydrophobicity'
-    # assert sec_res[0].custom_system_attributes[0].value == '0.13'
-    # assert sec_res[0].custom_system_attributes[0].unit is None
-
     assert len(sec_atoms_group) == 4
+    assert sec_atoms_group[0].particle_states == []
+    assert sec_atoms_group[0].cell == []
     assert sec_atoms_group[0].name == 'group_1ZNF'
     # assert sec_atoms_group[0].type == 'molecule_group'
     assert sec_atoms_group[0].composition_formula == '1ZNF(1)'
@@ -276,3 +258,5 @@ def test_md(parser):
     # assert len(sec_results.times) == 5001
     # assert sec_results.times.to('ps')[10].magnitude == approx(2.0)
     # assert sec_results.value_unit == 'kilojoule'
+
+    assert 1 == 2
