@@ -21,7 +21,7 @@ import numpy as np
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo.data_type import m_float64
 from nomad.datamodel.metainfo.annotations import Mapper as MapperAnnotation
-from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection
+from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection, SectionProxy
 from nomad_simulations.schema_packages import (
     atoms_state,
     general,
@@ -132,39 +132,40 @@ general.Program.version.m_annotations.setdefault('mapping', {})['hdf5'] = (
 # )
 
 
-class AtomsState(atoms_state.AtomsState):
-    pass
+# ! Removed for debugging sub_systems all below
+# class AtomsState(atoms_state.AtomsState):
+#     pass
 
 
-atoms_state.AtomsState.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    MapperAnnotation(mapper=('to_species_labels', ['particles.all.species_label']))
-)
+# atoms_state.AtomsState.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(mapper=('to_species_labels', ['particles.all.species_label']))
+# )
 
 
-atoms_state.AtomsState.chemical_symbol.m_annotations.setdefault('mapping', {})[
-    'hdf5'
-] = MapperAnnotation(mapper='.chemical_symbol')
+# atoms_state.AtomsState.chemical_symbol.m_annotations.setdefault('mapping', {})[
+#     'hdf5'
+# ] = MapperAnnotation(mapper='.chemical_symbol')
 
-atoms_state.AtomsState.label.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    MapperAnnotation(mapper='.label')
-)
+# atoms_state.AtomsState.label.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(mapper='.label')
+# )
+
+# ! Removed for debugging sub_systems all below
+# class AtomicCell(model_system.AtomicCell):
+#     pass
 
 
-class AtomicCell(model_system.AtomicCell):
-    pass
+# model_system.AtomicCell.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(mapper=('get_cell_data', ['.@']))
+# )
 
+# model_system.AtomicCell.lattice_vectors.m_annotations.setdefault('mapping', {})[
+#     'hdf5'
+# ] = MapperAnnotation(mapper='.lattice_vectors')
 
-model_system.AtomicCell.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    MapperAnnotation(mapper=('get_cell_data', ['.@']))
-)
-
-model_system.AtomicCell.lattice_vectors.m_annotations.setdefault('mapping', {})[
-    'hdf5'
-] = MapperAnnotation(mapper='.lattice_vectors')
-
-model_system.AtomicCell.periodic_boundary_conditions.m_annotations.setdefault(
-    'mapping', {}
-)['hdf5'] = MapperAnnotation(mapper='.boundary')
+# model_system.AtomicCell.periodic_boundary_conditions.m_annotations.setdefault(
+#     'mapping', {}
+# )['hdf5'] = MapperAnnotation(mapper='.boundary')
 
 ### SUBSECTIONS
 
@@ -192,19 +193,30 @@ class ModelSystem(model_system.ModelSystem):
         )
     )
 
+    # sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
+    # sub_systems = SubSection(
+    #     sub_section=SectionProxy(
+    #         'nomad_parser_h5md.schema_packages.schema.ModelSystem'
+    #     ),
+    #     repeats=True,
+    # )
+
 
 # ModelSystem.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
 #     mapper=('get_system_data', ['.@'])
 # )
 
 # TODO inconsistent? shape with original def
-ModelSystem.bond_list.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    MapperAnnotation(mapper='connectivity.bonds')
-)
+# model_system.
+# ! Correct, just removed for debugging
+# ModelSystem.bond_list.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(mapper='connectivity.bonds')
+# )
 
-ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    MapperAnnotation(mapper=r'particles.all.box."@dimension"')
-)
+# model_system # ! conflicting with sub_systems
+# ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(mapper=r'particles.all.box."@dimension"')
+# )
 
 # ModelSystem.positions.m_annotations.setdefault('mapping', {})['hdf5'] = (
 #     MapperAnnotation(mapper='.positions')
@@ -215,6 +227,7 @@ ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})['hdf5'] = (
 # ModelSystem.positions.m_annotations.setdefault('mapping', {})['hdf5'] = (
 #     MapperAnnotation(mapper=('get_traj_data', ['particles.all.position']))
 # )
+# model_system.
 ModelSystem.positions.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
         mapper=(
@@ -225,6 +238,7 @@ ModelSystem.positions.m_annotations.setdefault('mapping', {})['hdf5'] = (
     )
 )
 
+# model_system.
 ModelSystem.velocities.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
         mapper=(
@@ -235,26 +249,37 @@ ModelSystem.velocities.m_annotations.setdefault('mapping', {})['hdf5'] = (
     )
 )
 
+# TODO length of positions in section data does not work
+# model_system # ! conflicting with sub_systems
+# ModelSystem.n_particles.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(mapper='length(particles.all.position.value.__value | [0])')
+# )
+
 # model_system.ModelSystem.sub_systems.m_annotations.setdefault('mapping', {})['hdf5'] = (
 #     MapperAnnotation(
 #         mapper=('get_sub_systems', ['.@'], dict(path='connectivity.particles_group'))
 #     )
 # )
 ModelSystem.sub_systems.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    # MapperAnnotation(
-    #     mapper=('get_sub_systems', ['.@'], dict(path='connectivity.particles_group'))
-    # )
-    MapperAnnotation(mapper=('get_sub_systems', ['.@']))
+    MapperAnnotation(mapper=('get_sub_systems', ['.@'], dict(path='connectivity')))
+    # MapperAnnotation(mapper=('get_sub_systems', ['.@']))
     # MapperAnnotation(
     #     mapper=('get_traj_data', ['.@'], dict(path='connectivity.particles_group'))
     # )
     # MapperAnnotation(mapper=('get_sub_systems', ['connectivity.particles_group']))
 )
 
-# TODO length of positions in section data does not work
-ModelSystem.n_particles.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    MapperAnnotation(mapper='length(particles.all.position.value.__value | [0])')
+ModelSystem.name.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+    mapper='.label'
 )
+
+ModelSystem.composition_formula.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(mapper='.formula')
+)
+
+# ModelSystem.composition_formula.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(mapper='.@.formula')
+# )
 
 
 ### SUBSECTIONS
@@ -912,7 +937,7 @@ molecular_dynamics.ShearParameters.shear_type.m_annotations.setdefault('mapping'
     mapper=(
         'map_value',
         [h5md_path_shear],
-        dict(key='shear_type'),
+        dict(key='shear_type', enum_spec='lower'),
     )
 )
 
@@ -1092,7 +1117,7 @@ molecular_dynamics.MolecularDynamicsMethod.thermodynamic_ensemble.m_annotations.
     mapper=(
         'map_value',
         [h5md_path_md],
-        dict(key='thermodynamic_ensemble'),
+        dict(key='thermodynamic_ensemble', enum_spec='upper'),
     )
 )
 
@@ -1102,7 +1127,7 @@ molecular_dynamics.MolecularDynamicsMethod.integrator_type.m_annotations.setdefa
     mapper=(
         'map_value',
         [h5md_path_md],
-        dict(key='integrator_type'),
+        dict(key='integrator_type', enum_spec='lower'),
     )
 )
 

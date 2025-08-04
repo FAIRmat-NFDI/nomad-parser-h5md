@@ -2,9 +2,18 @@ from typing import Any
 import pint
 
 from nomad.parsing.file_parser.mapping_parser import HDF5Parser, MetainfoParser, Path
-from nomad_parser_h5md.schema_packages.schema import Simulation, MolecularDynamics
+from nomad_parser_h5md.schema_packages.schema import (
+    Simulation,
+    ParamEntry,
+)
+from nomad_parser_h5md.schema_packages.schema import ModelSystem
+
+# from nomad_simulations.schema_packages.model_system import ModelSystem
+from simulationworkflowschema.molecular_dynamics import MolecularDynamics
 from nomad_parser_h5md.parsers.mdparserutils import MDParser
 from nomad.units import ureg
+
+from nomad_parser_h5md.parsers.utils import remove_mapping_annotations
 
 from h5py import Group
 
@@ -40,66 +49,135 @@ class H5MDH5Parser(HDF5Parser):
         if kwargs.get('key') is None:
             return None
 
-        return self.get_value(kwargs.get('key'), source)
+        value = self.get_value(kwargs.get('key'), source)
+
+        enum_spec = kwargs.get('enum_spec', None)
+        if enum_spec == 'upper':
+            return value.upper() if isinstance(value, str) else value
+        elif enum_spec == 'lower':
+            return value.lower() if isinstance(value, str) else value
+
+        return value
 
     def get_sub_systems(self, source: dict[str, Any], **kwargs) -> list[dict[str, Any]]:
-        # def get_traj_data(self, source: dict[str, Any], **kwargs) -> pint.Quantity:
-        print('in get_sub_systems')
-        print(source)
-        print(source.keys())
-        print(source.items())
+        # print('in get_sub_systems')
+        step = source.get('step', None)
+        label = source.get('label', None)
+        path = kwargs.get('path', None)
+        # print(f'step: {step}, path: {path}, label: {label}')
+        # if step is None or path is None:
+        #     return []
+        if step is not None:
+            if step != 0:  # TODO extend to time-dependent bond lists and topologies
+                return []
+            source = self.get_source(self.data, kwargs['path'])
+            # source = [val for _, val in source.items()]
 
-        return []
+        particles_group = source.get('particles_group', None)
+        # print(f'particles_group: {particles_group}')
+        if particles_group is None:
+            return []
 
-    def get_system_hierarchy(
-        self,
-        particlesgroup: {},
-    ) -> list[dict[str, Any]]:
-        data = []
-        for key, dct in particlesgroup.items():
-            data.append(dct)
-            path_particlesgroup_key = f'{path_particlesgroup}.{key}'
+        source = (
+            [group for group in particles_group.values()]
+            if isinstance(particles_group, dict)
+            else []
+        )
 
-            particles_group = {
-                group_key: h5md_sec_particlesgroup.get(
-                    f'{path_particlesgroup_key}.{group_key}'
-                )
-                for group_key in h5md_sec_particlesgroup[key].keys()
-            }
+        return source
+        # print(f'type(source): {type(source)}')
+        # print(f'source: {source}')
+        # # print(f'source.keys(): {source.keys()}')
+        # for key, val in source.items():
+        #     print(f'key: {key}, val.keys: {val.keys()}, label: {val.get("label")}')
 
-            particles_group = {
-                group_key: self.data.get(f'{path_particlesgroup_key}.{group_key}')
-                for group_key in h5md_sec_particlesgroup[key].keys()
-            }
-            data['branch_label'] = particles_group.pop('label', None)
-            data['atom_indices'] = particles_group.pop('indices', None)
-            # TODO remove the deprecated below from the test file
-            data['type'] = particles_group.pop('type', None)  # ? deprecate?
-            data['is_molecule'] = particles_group.pop(
-                'is_molecule', None
-            )  # ? deprecate?
-            particles_group.pop('formula', None)  # covered in normalization now
-            # write all the standard quantities to the archive
-            particles_subgroup = particles_group.pop('particles_group', None)
+        # convert source_data / particles_group to a list of dicts recursively
+        # source_data = [val for _, val in source_data.items()]
+        # for item in source_data:
+        #     particles_group = item.pop('particles_group', None)
+        #     if particles_group:
+        #         item[]
 
-            # set the remaining attributes
-            data['custom_system_attributes'] = []
-            for particles_group_key in particles_group.keys():
-                val = particles_group.get(particles_group_key)
-                units = val.units if hasattr(val, 'units') else None
-                val = val.magnitude if units is not None else val
-                data['custom_system_attributes'].append(
-                    {'name': particles_group_key, 'value': val, 'unit': units}
-                )
+        # return [
+        #     {
+        #         'label': 'group_1',
+        #         'formula': 'form(1)',
+        #         'particles_group': [
+        #             {'label': 'mol_1', 'formula': 'mol(1)'},
+        #             {'label': 'mol_2', 'formula': 'mol(2)'},
+        #         ],
+        #     },
+        #     {'label': 'group_2', 'formula': 'form(2)'},
+        #     {'label': 'group_3', 'formula': 'form(3)'},
+        # ]
+        # return [
+        #     [
+        #         {
+        #             'label': 'group_1',
+        #             'formula': 'form(1)',
+        #             # 'particles_group': [
+        #             #     {'label': 'mol_1', 'formula': 'mol(1)'},
+        #             #     {'label': 'mol_2', 'formula': 'mol(2)'},
+        #             # ],
+        #         },
+        #         {
+        #             'label': 'group_1-2',
+        #             'formula': 'form(1-2)',
+        #         },
+        #     ],
+        #     {'label': 'group_2', 'formula': 'form(2)'},
+        #     {'label': 'group_3', 'formula': 'form(3)'},
+        # ]
 
-            # get the next branch level
-            if particles_subgroup:
-                self.get_system_hierarchy(
-                    particles_subgroup,
-                    f'{path_particlesgroup_key}.particles_group',
-                )
+    # def get_system_hierarchy(
+    #     self,
+    #     particlesgroup: {},
+    # ) -> list[dict[str, Any]]:
+    #     data = []
+    #     for key, dct in particlesgroup.items():
+    #         data.append(dct)
+    #         path_particlesgroup_key = f'{path_particlesgroup}.{key}'
 
-        return []
+    #         particles_group = {
+    #             group_key: h5md_sec_particlesgroup.get(
+    #                 f'{path_particlesgroup_key}.{group_key}'
+    #             )
+    #             for group_key in h5md_sec_particlesgroup[key].keys()
+    #         }
+
+    #         particles_group = {
+    #             group_key: self.data.get(f'{path_particlesgroup_key}.{group_key}')
+    #             for group_key in h5md_sec_particlesgroup[key].keys()
+    #         }
+    #         data['branch_label'] = particles_group.pop('label', None)
+    #         data['atom_indices'] = particles_group.pop('indices', None)
+    #         # TODO remove the deprecated below from the test file
+    #         data['type'] = particles_group.pop('type', None)  # ? deprecate?
+    #         data['is_molecule'] = particles_group.pop(
+    #             'is_molecule', None
+    #         )  # ? deprecate?
+    #         particles_group.pop('formula', None)  # covered in normalization now
+    #         # write all the standard quantities to the archive
+    #         particles_subgroup = particles_group.pop('particles_group', None)
+
+    #         # set the remaining attributes
+    #         data['custom_system_attributes'] = []
+    #         for particles_group_key in particles_group.keys():
+    #             val = particles_group.get(particles_group_key)
+    #             units = val.units if hasattr(val, 'units') else None
+    #             val = val.magnitude if units is not None else val
+    #             data['custom_system_attributes'].append(
+    #                 {'name': particles_group_key, 'value': val, 'unit': units}
+    #             )
+
+    #         # get the next branch level
+    #         if particles_subgroup:
+    #             self.get_system_hierarchy(
+    #                 particles_subgroup,
+    #                 f'{path_particlesgroup_key}.particles_group',
+    #             )
+
+    #     return []
 
     def get_system_steps(self, source: dict[str, Any]) -> list[dict[str, Any]]:
         steps = self.get_value('step', source)
@@ -158,10 +236,10 @@ class H5MDH5Parser(HDF5Parser):
         return system_data
 
     def get_traj_data(self, source: dict[str, Any], **kwargs) -> pint.Quantity:
-        print('in get_traj_data')
+        # print('in get_traj_data')
         # print(source.get('step'))
         # print(source.keys())
-        print(kwargs.get('path'))
+        # print(kwargs.get('path'))
         # if source.get('step') is None:
         #     return
 
@@ -193,7 +271,7 @@ class H5MDH5Parser(HDF5Parser):
         return data
 
     def get_system_data(self, source: dict[str, Any]) -> dict[str, Any]:
-        print('in get_system_data')
+        # print('in get_system_data')
         particles = self.data.get('particles', {}).get('all')
         if particles is None:
             return {}
@@ -385,7 +463,56 @@ class H5MDParser(MDParser):
         super().__init__()
         self.h5_parser = H5MDH5Parser()
         self.simulation_parser = MetainfoParser()
+        self.simulation_parser.max_nested_level = 10
         self.workflow_parser = MetainfoParser()
+
+    def parse_system_hierarchy(
+        self,
+        nomad_sec: ModelSystem,
+        h5md_sec_particlesgroup: Group,
+        path_particlesgroup: str,
+    ):
+        data = {}
+        for key in h5md_sec_particlesgroup.keys():
+            path_particlesgroup_key = f'{path_particlesgroup}.{key}'
+            particles_group = {
+                group_key: self._data_parser.get(
+                    f'{path_particlesgroup_key}.{group_key}'
+                )
+                for group_key in h5md_sec_particlesgroup[key].keys()
+            }
+            sec_model_system = ModelSystem()
+            nomad_sec.model_system.append(sec_model_system)
+            data['branch_label'] = particles_group.pop('label', None)
+            data['atom_indices'] = particles_group.pop('indices', None)
+            # TODO remove the deprecated below from the test file
+            # sec_atomsgroup.type = particles_group.pop("type", None) #? deprecate?
+            particles_group.pop('type', None)
+            # sec_atomsgroup.is_molecule = particles_group.pop("is_molecule", None) #? deprecate?
+            particles_group.pop('is_molecule', None)
+            particles_group.pop('formula', None)  # covered in normalization now
+            # write all the standard quantities to the archive
+            print(sec_model_system.sub_systems)
+            self.parse_section(data, sec_model_system.sub_systems)
+            print(sec_model_system.sub_systems)
+            particles_subgroup = particles_group.pop('particles_group', None)
+
+            # set the remaining attributes
+            for particles_group_key in particles_group.keys():
+                val = particles_group.get(particles_group_key)
+                units = val.units if hasattr(val, 'units') else None
+                val = val.magnitude if units is not None else val
+                sec_model_system.custom_system_attributes.append(
+                    ParamEntry(name=particles_group_key, value=val, unit=units)
+                )
+
+            # get the next branch level
+            if particles_subgroup:
+                self.parse_system_hierarchy(
+                    sec_model_system,
+                    particles_subgroup,
+                    f'{path_particlesgroup_key}.particles_group',
+                )
 
     def write_to_archive(self) -> None:
         # create h5 parser
@@ -413,9 +540,33 @@ class H5MDParser(MDParser):
         self.archive.data = self.simulation_parser.data_object
         self.archive.workflow2 = self.workflow_parser.data_object
 
-        self.h5_parser.close()
+        # manually set the hierarchy for now
+        # hierarchy_root = Path(path='connectivity.particles_group').get_data(
+        #     self.h5_parser.data, default=[]
+        # )
+        # if hierarchy_root:
+        #     print('in hierarchy root')
+        #     print(type(hierarchy_root))
+        #     self.parse_system_hierarchy(
+        #         self.archive.data.model_system,
+        #         hierarchy_root,
+        #         'connectivity.particles_group',
+        #     )
 
+        # close parsers
+        self.h5_parser.close()
         self.simulation_parser.close()
 
+        # simulation = self.archive.data
+        # print('simulation.m_annotations:', simulation.m_annotations)
+        # system = self.archive.data.model_system[0]
+        # if not system.sub_systems:
+        #     system.sub_systems.append(ModelSystem())
+        # print('system.m_annotations:', system.m_annotations)
+        # print('system.sub_systems[0].m_def:', system.sub_systems[0].m_def)
+        # print(f'system.sub_systems[0]: {system.sub_systems[0]}')
+        # print('system.sub_systems[0].__dict__:', system.sub_systems[0].__dict__)
+        # print('system.positions.m_annotations:', system.positions.m_annotations)
 
-# TODO: remove mapping annotations
+        # remove mapping annotations
+        remove_mapping_annotations(self.archive.data.m_def)
