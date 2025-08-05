@@ -130,7 +130,6 @@ general.Program.version.m_annotations.setdefault('mapping', {})['hdf5'] = (
 # )
 
 
-# ! Removed for debugging sub_systems all below
 ### class AtomsState(atoms_state.AtomsState):
 
 atoms_state.AtomsState.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
@@ -148,7 +147,6 @@ atoms_state.AtomsState.label.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper='.label')
 )
 
-# ! Removed for debugging sub_systems all below
 ### class AtomicCell(model_system.AtomicCell):
 
 model_system.AtomicCell.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
@@ -184,19 +182,6 @@ class ModelSystem(model_system.ModelSystem):
     )
 
 
-# ModelSystem.n_particles.m_annotations.setdefault('mapping', {})['hdf5'] = (
-#     MapperAnnotation(mapper='length(particles.all.position.value.__value | [0])')
-# )
-
-# ModelSystem.n_particles.m_annotations.setdefault('mapping', {})['hdf5'] = (
-#     MapperAnnotation(
-#         mapper=(
-#             'get_top_system_quantity',
-#             ['.@'],
-#             dict(path='particles.all.position', func=len),
-#         )
-#     )
-# )
 ModelSystem.n_particles.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper='.n_particles')
 )
@@ -242,6 +227,14 @@ ModelSystem.particle_indices.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper='.indices')
 )
 
+ModelSystem.branch_label.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(mapper='.type')
+)
+
+# ModelSystem.type.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
+#     mapper='.type'
+# ) # TODO add function to filter out valid Enums
+
 
 ### SUBSECTIONS
 
@@ -253,7 +246,7 @@ ModelSystem.particle_indices.m_annotations.setdefault('mapping', {})['hdf5'] = (
 #### model_system.model_system --> ModelSystem
 
 
-## SIMULATION.METHOD --> archive.data.method
+# SIMULATION.METHOD --> archive.data.method
 
 
 # class ForceCalculations(runschema.method.ForceCalculations):
@@ -285,7 +278,8 @@ ModelSystem.particle_indices.m_annotations.setdefault('mapping', {})['hdf5'] = (
 #         repeats=True,
 #     )
 
-## SIMULATION.OUTPUTS --> archive.data.outputs
+
+# SIMULATION.OUTPUTS --> archive.data.outputs
 
 
 class CustomProperty(ArchiveSection):
@@ -338,8 +332,7 @@ class CustomProperty(ArchiveSection):
     )
 
 
-class EnergyContribution(properties.energies.EnergyContribution):
-    pass
+## class EnergyContribution(properties.energies.EnergyContribution):
 
 
 # value annotation defined in TotalEnergy.value since they refer to the same quantity
@@ -350,8 +343,7 @@ properties.energies.EnergyContribution.name.m_annotations.setdefault('mapping', 
 ] = MapperAnnotation(mapper='.name')
 
 
-class TotalEnergy(properties.TotalEnergy):
-    pass
+## class TotalEnergy(properties.TotalEnergy):
 
 
 properties.TotalEnergy.value.m_annotations.setdefault('mapping', {})['hdf5'] = (
@@ -377,82 +369,7 @@ properties.TotalEnergy.contributions.m_annotations.setdefault('mapping', {})['hd
 )
 
 
-# This was for when PP had checks
-# # TODO move these base definitions to nomad-simulations
-# class ForceContribution(ArchiveSection):
-#     """
-#     Abstract class used to define a common `value` quantity with the appropriate units
-#     for different types of forces, which avoids repeating the definitions for each
-#     force class.
-#     """
-
-#     name = Quantity(
-#         type=str,
-#         shape=[],
-#         description="""
-#         Name of the parameter.
-#         """,
-#     )
-
-#     value = Quantity(
-#         type=np.float64,
-#         shape=['*', 3],
-#         unit='newton',
-#         description="""
-#         """,
-#     )
-
-#     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-#         super().normalize(archive, logger)
-
-
-# ForceContribution.name.m_annotations.setdefault('mapping', {})['hdf5'] = (
-#     MapperAnnotation(mapper='.name')
-# )
-
-
-# class TotalForce(ForceContribution):
-#     """
-#     The total force on a system. `contributions` specify individual force
-#     contributions to the `TotalForce`.
-#     """
-
-#     contributions = SubSection(sub_section=ForceContribution.m_def, repeats=True)
-
-#     def __init__(
-#         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-#     ) -> None:
-#         super().__init__(m_def, m_context, **kwargs)
-#         self.name = self.m_def.name
-
-#     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-#         super().normalize(archive, logger)
-
-
-# TotalForce.value.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnotation(
-#     mapper=(
-#         'get_output_data',
-#         ['.@'],
-#         dict(path='observables.forces.total', observable_type='configurational'),
-#     )
-# )
-
-# ### SUBSECTIONS
-
-# TotalForce.contributions.m_annotations.setdefault('mapping', {})['hdf5'] = (
-#     MapperAnnotation(
-#         mapper=(
-#             'get_contributions',
-#             ['.@'],
-#             dict(path='observables.forces', exclude=['total']),
-#         )
-#     )
-# )
-
-
-## TEST PP without validations
-class ForceContribution(properties.forces.ForceContribution):
-    pass
+## class ForceContribution(properties.forces.ForceContribution):
 
 
 properties.forces.ForceContribution.name.m_annotations.setdefault('mapping', {})[
@@ -460,8 +377,7 @@ properties.forces.ForceContribution.name.m_annotations.setdefault('mapping', {})
 ] = MapperAnnotation(mapper='.name')
 
 
-class TotalForce(properties.TotalForce):
-    pass
+## class TotalForce(properties.TotalForce):
 
 
 properties.TotalForce.value.m_annotations.setdefault('mapping', {})['hdf5'] = (
@@ -487,8 +403,7 @@ properties.TotalForce.contributions.m_annotations.setdefault('mapping', {})['hdf
 )
 
 
-class Temperature(properties.Temperature):
-    pass
+## class Temperature(properties.Temperature):
 
 
 properties.Temperature.value.m_annotations.setdefault('mapping', {})['hdf5'] = (
@@ -603,9 +518,6 @@ Simulation.program.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnot
     mapper='h5md.program'
 )
 
-# Simulation.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
-#     MapperAnnotation(mapper=('get_system_steps', ['particles.all.position']))
-# )
 Simulation.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper=('get_traj_data', ['particles.all']))
 )
@@ -614,11 +526,10 @@ Simulation.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
 # WORKFLOW --> archive.workflow2
 h5md_path_md = 'parameters.workflow.molecular_dynamics'
 
-## WORKFLOW.METHOD --> archive.workflow2.method
+# WORKFLOW.METHOD --> archive.workflow2.method
 
 
-class ThermostatParameters(molecular_dynamics.ThermostatParameters):
-    pass
+## class ThermostatParameters(molecular_dynamics.ThermostatParameters):
 
 
 h5md_path_thermostat = f'{h5md_path_md}.thermostat_parameters'
@@ -629,7 +540,7 @@ molecular_dynamics.ThermostatParameters.thermostat_type.m_annotations.setdefault
     mapper=(
         'map_value',
         [h5md_path_thermostat],
-        dict(key='thermostat_type'),
+        dict(key='thermostat_type', enum_spec='lower'),
     )
 )
 
@@ -669,7 +580,7 @@ molecular_dynamics.ThermostatParameters.temperature_profile.m_annotations.setdef
     mapper=(
         'map_value',
         [h5md_path_thermostat],
-        dict(key='temperature_profile'),
+        dict(key='temperature_profile', enum_spec='lower'),
     )
 )
 
@@ -744,8 +655,7 @@ molecular_dynamics.ThermostatParameters.step_end.m_annotations.setdefault(
 )
 
 
-class BarostatParameters(molecular_dynamics.BarostatParameters):
-    pass
+## class BarostatParameters(molecular_dynamics.BarostatParameters):
 
 
 h5md_path_barostat = f'{h5md_path_md}.barostat_parameters'
@@ -756,7 +666,7 @@ molecular_dynamics.BarostatParameters.barostat_type.m_annotations.setdefault(
     mapper=(
         'map_value',
         [h5md_path_barostat],
-        dict(key='barostat_type'),
+        dict(key='barostat_type', enum_spec='lower'),
     )
 )
 
@@ -766,7 +676,7 @@ molecular_dynamics.BarostatParameters.coupling_type.m_annotations.setdefault(
     mapper=(
         'map_value',
         [h5md_path_barostat],
-        dict(key='coupling_type'),
+        dict(key='coupling_type', enum_spec='lower'),
     )
 )
 
@@ -806,7 +716,7 @@ molecular_dynamics.BarostatParameters.pressure_profile.m_annotations.setdefault(
     mapper=(
         'map_value',
         [h5md_path_barostat],
-        dict(key='pressure_profile'),
+        dict(key='pressure_profile', enum_spec='lower'),
     )
 )
 
@@ -881,8 +791,7 @@ molecular_dynamics.BarostatParameters.step_end.m_annotations.setdefault('mapping
 )
 
 
-class ShearParameters(molecular_dynamics.ShearParameters):
-    pass
+## class ShearParameters(molecular_dynamics.ShearParameters):
 
 
 h5md_path_shear = f'{h5md_path_md}.shear_parameters'
@@ -928,10 +837,9 @@ molecular_dynamics.ShearParameters.step_end.m_annotations.setdefault('mapping', 
 )
 
 
-class FreeEnergyCalculationParameters(
-    molecular_dynamics.FreeEnergyCalculationParameters
-):
-    pass
+## class FreeEnergyCalculationParameters(
+##     molecular_dynamics.FreeEnergyCalculationParameters
+## ):
 
 
 h5md_path_FEC = f'{h5md_path_md}.free_energy_calculation_parameters'
@@ -943,7 +851,7 @@ molecular_dynamics.FreeEnergyCalculationParameters.type.m_annotations.setdefault
     mapper=(
         'map_value',
         [h5md_path_FEC],
-        dict(key='type'),
+        dict(key='type', enum_spec='lower'),
     )
 )
 
@@ -1034,8 +942,7 @@ molecular_dynamics.FreeEnergyCalculationParameters.lambdas.m_annotations.setdefa
 )['hdf5'] = MapperAnnotation(mapper='@')
 
 
-class Lambdas(molecular_dynamics.Lambdas):
-    pass
+## class Lambdas(molecular_dynamics.Lambdas):
 
 
 # ? Not sure about where this info is going in h5md
@@ -1047,7 +954,7 @@ molecular_dynamics.Lambdas.type.m_annotations.setdefault('mapping', {})['hdf5'] 
         mapper=(
             'map_value',
             [h5md_path_lambdas],
-            dict(key='type'),
+            dict(key='type', enum_spec='lower'),
         )
     )
 )
@@ -1063,8 +970,7 @@ molecular_dynamics.Lambdas.value.m_annotations.setdefault('mapping', {})['hdf5']
 )
 
 
-class MolecularDynamicsMethod(molecular_dynamics.MolecularDynamicsMethod):
-    pass
+## class MolecularDynamicsMethod(molecular_dynamics.MolecularDynamicsMethod):
 
 
 molecular_dynamics.MolecularDynamicsMethod.thermodynamic_ensemble.m_annotations.setdefault(
@@ -1165,13 +1071,12 @@ molecular_dynamics.MolecularDynamicsMethod.free_energy_calculation_parameters.m_
     'mapping', {}
 )['hdf5'] = MapperAnnotation(mapper='@')
 
-## WORKFLOW.RESULTS --> archive.workflow2.results
+# WORKFLOW.RESULTS --> archive.workflow2.results
 
 
-class RadialDistributionFunctionValues(
-    molecular_dynamics.RadialDistributionFunctionValues
-):
-    pass
+## class RadialDistributionFunctionValues(
+##     molecular_dynamics.RadialDistributionFunctionValues
+## ):
 
 
 # ! Should be something like this but first need to
@@ -1191,8 +1096,7 @@ molecular_dynamics.RadialDistributionFunctionValues.value.m_annotations.setdefau
 )
 
 
-class MolecularDynamicsResults(molecular_dynamics.MolecularDynamicsResults):
-    pass
+## class MolecularDynamicsResults(molecular_dynamics.MolecularDynamicsResults):
 
 
 # MolecularDynamicsResults.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
@@ -1255,8 +1159,7 @@ molecular_dynamics.MolecularDynamicsResults.free_energy_calculations.m_annotatio
 )['hdf5'] = MapperAnnotation(mapper='.@')
 
 
-class MolecularDynamics(molecular_dynamics.MolecularDynamics):
-    pass
+## class MolecularDynamics(molecular_dynamics.MolecularDynamics):
 
 
 molecular_dynamics.MolecularDynamics.m_def.m_annotations.setdefault('mapping', {})[

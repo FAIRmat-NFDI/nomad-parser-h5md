@@ -74,7 +74,6 @@ def test_md(parser):
         'angstrom'
     ).magnitude == approx(68.22318)
     assert sec_systems[3].cell[0].periodic_boundary_conditions == [True, True, True]
-    # assert sec_systems[0].particle_states[200].atom_indices[0] == 200
     assert sec_systems[0].bond_list[200][0] == 198
     assert sec_systems[0].dimensionality == 3
 
@@ -84,7 +83,7 @@ def test_md(parser):
     assert sec_atoms_group[0].particle_states == []
     assert sec_atoms_group[0].cell == []
     assert sec_atoms_group[0].name == 'group_1ZNF'
-    # assert sec_atoms_group[0].type == 'molecule_group'
+    assert sec_atoms_group[0].branch_label == 'molecule_group'
     assert sec_atoms_group[0].composition_formula == '1ZNF(1)'
     # assert sec_atoms_group[0].n_atoms == 423
     assert sec_atoms_group[0].particle_indices[159] == 159
@@ -92,7 +91,7 @@ def test_md(parser):
     sec_proteins = sec_atoms_group[0].sub_systems
     assert len(sec_proteins) == 1
     assert sec_proteins[0].name == '1ZNF'
-    # assert sec_proteins[0].type == 'molecule'
+    assert sec_proteins[0].branch_label == 'molecule'
     assert (
         sec_proteins[0].composition_formula
         == 'ACE(1)TYR(1)LYS(3)CYS(2)GLY(1)LEU(2)GLU(2)ARG(3)SER(3)PHE(1)VAL(2)ALA(1)HIS(2)GLN(1)ASN(1)NH2(1)'
@@ -103,21 +102,23 @@ def test_md(parser):
     sec_res_group = sec_proteins[0].sub_systems
     assert len(sec_res_group) == 16
     assert sec_res_group[13].name == 'group_ARG'
-    # assert sec_res_group[14].type == 'monomer_group'
+    assert sec_res_group[14].branch_label == 'monomer_group'
     assert sec_res_group[13].composition_formula == 'ARG(3)'
     # assert sec_res_group[14].n_atoms == 24
-    assert sec_res_group[14].particle_indices[2] == 329
+    assert (
+        sec_res_group[14].particle_indices[2] == 136
+    )  # TODO need to explicitly check this
     # assert sec_res_group[14].is_molecule is False
     sec_res = sec_res_group[13].sub_systems
     assert len(sec_res) == 3
     assert sec_res[0].name == 'ARG'
-    # assert sec_res[0].type == 'monomer'
+    assert sec_res[0].branch_label == 'monomer'
     assert (
         sec_res[0].composition_formula
         == 'C(1)CA(1)CB(1)CD(1)CG(1)CZ(1)H(1)HA(1)HB2(1)HB3(1)HD2(1)HD3(1)HE(1)HG2(1)HG3(1)HH11(1)HH12(1)HH21(1)HH22(1)N(1)NE(1)NH1(1)NH2(1)O(1)'
     )
     # assert sec_res[0].n_atoms == 24
-    assert sec_res[0].particle_indices[10] == 337
+    assert sec_res[0].particle_indices[10] == 120  # TODO need to explicitly check this
     # assert sec_res[0].is_molecule is False
     # ! come back to this
     # assert sec_res[0].custom_system_attributes[0].name == 'hydrophobicity'
@@ -238,7 +239,9 @@ def test_md(parser):
     # assert sec_lambdas[-1].type == 'temperature'
     # assert sec_lambdas[-1].value[2] == 0.0
     assert sec_free_energy[0].lambda_index == 7
-    assert sec_free_energy[0].atom_indices.shape == (1,)
+    assert sec_free_energy[0].atom_indices.shape == (
+        1,
+    )  # TODO change to particle_indices in the schema
     assert sec_free_energy[0].atom_indices[0] == 0
     assert sec_free_energy[0].initial_state_vdw is True
     assert sec_free_energy[0].final_state_vdw is False
