@@ -238,6 +238,10 @@ ModelSystem.composition_formula.m_annotations.setdefault('mapping', {})['hdf5'] 
     MapperAnnotation(mapper='.formula')
 )
 
+ModelSystem.particle_indices.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(mapper='.indices')
+)
+
 
 ### SUBSECTIONS
 

@@ -401,33 +401,9 @@ class H5MDParser(MDParser):
         self.archive.data = self.simulation_parser.data_object
         self.archive.workflow2 = self.workflow_parser.data_object
 
-        # manually set the hierarchy for now
-        # hierarchy_root = Path(path='connectivity.particles_group').get_data(
-        #     self.h5_parser.data, default=[]
-        # )
-        # if hierarchy_root:
-        #     print('in hierarchy root')
-        #     print(type(hierarchy_root))
-        #     self.parse_system_hierarchy(
-        #         self.archive.data.model_system,
-        #         hierarchy_root,
-        #         'connectivity.particles_group',
-        #     )
-
         # close parsers
         self.h5_parser.close()
         self.simulation_parser.close()
-
-        # simulation = self.archive.data
-        # print('simulation.m_annotations:', simulation.m_annotations)
-        # system = self.archive.data.model_system[0]
-        # if not system.sub_systems:
-        #     system.sub_systems.append(ModelSystem())
-        # print('system.m_annotations:', system.m_annotations)
-        # print('system.sub_systems[0].m_def:', system.sub_systems[0].m_def)
-        # print(f'system.sub_systems[0]: {system.sub_systems[0]}')
-        # print('system.sub_systems[0].__dict__:', system.sub_systems[0].__dict__)
-        # print('system.positions.m_annotations:', system.positions.m_annotations)
 
         # remove mapping annotations
         remove_mapping_annotations(self.archive.data.m_def)
