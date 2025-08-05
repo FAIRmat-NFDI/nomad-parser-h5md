@@ -41,6 +41,7 @@ class H5MDH5Parser(HDF5Parser):
     def get_source(self, parent: dict[str, Any], path: str):
         path_segments = path.split('.', 1)
         source = parent.get(path_segments[0], {})
+
         if len(path_segments) == 1:
             return source
         return self.get_source(source, path_segments[1])
@@ -60,7 +61,6 @@ class H5MDH5Parser(HDF5Parser):
         return value
 
     def get_sub_systems(self, source: dict[str, Any], **kwargs) -> list[dict[str, Any]]:
-        # print('in get_sub_systems')
         step = source.get('step', None)
         if step is not None:
             if step != 0:  # TODO extend to time-dependent bond lists and topologies
@@ -79,16 +79,27 @@ class H5MDH5Parser(HDF5Parser):
 
         return source
 
-    def get_system_steps(self, source: dict[str, Any]) -> list[dict[str, Any]]:
-        steps = self.get_value('step', source)
-        times = self.get_value('time', source)
-        system_steps = [
-            {'step': step, 'time': times[n]}
+    def get_traj_data(self, source: dict[str, Any]) -> list[dict[str, Any]]:
+        positions = self.get_source(source, 'position')
+        steps = self.get_value('step', positions)
+        times = self.get_value('time', positions)
+        positions = self.get_value('value', positions)
+        velocities = self.get_source(source, 'velocity')
+        velocities = self.get_value('value', velocities)
+
+        traj_data = [
+            {
+                'step': step,
+                'time': times[n],
+                'n_particles': len(positions[n]) if len(positions) != 0 else [],
+                'positions': positions[n] if len(positions) != 0 else [],
+                'velocities': velocities[n] if len(velocities) != 0 else [],
+            }
             for n, step in enumerate(steps)
             if step in self.trajectory_steps
         ]
 
-        return system_steps
+        return traj_data
 
     def get_step_data(self, data: dict[str, Any], step: int) -> dict[str, Any]:
         step_data = {}
@@ -128,19 +139,6 @@ class H5MDH5Parser(HDF5Parser):
 
         return system_data
 
-    def get_traj_data(self, source: dict[str, Any], **kwargs) -> pint.Quantity:
-        # TODO - check to see if this function can be combined with get_output_data
-        if source.get('value') is not None:  # ? Is this needed?
-            return source['value']
-        if source.get('step') is None or kwargs.get('path') is None:
-            return
-
-        source_data = self.get_source(self.data, kwargs['path'])
-
-        data = self.get_step_data(source_data, source['step']).get('value')
-
-        return data
-
     def to_species_labels(self, source: list[str], **kwargs) -> list[dict[str, Any]]:
         if kwargs.get('path') is None or source.get('step') is None:
             return []
@@ -156,8 +154,17 @@ class H5MDH5Parser(HDF5Parser):
             return []
 
         source_data = self.get_source(self.data, kwargs['path'])
+        if kwargs.get('func'):
+            try:
+                source_data = kwargs.get('func')(source_data)
+            except Exception:
+                self.logger.warning(
+                    'Error applying function to get top level system quantity, '
+                    'will not be populated.'
+                )
+                return []
 
-        return source_data
+        return self.get_source(self.data, kwargs['path'])
 
     def get_output_steps(self, source: dict[str, Any]) -> list[dict[str, Any]]:
         output_steps = {}
@@ -231,7 +238,7 @@ class H5MDH5Parser(HDF5Parser):
         ]:
             self.logger.warning(
                 'Invalid or no obervable type defined in the schema annotation '
-                f'for {source.keys()},skipping this observable.'
+                f'for {source.keys()}, skipping this observable.'
             )
             return
 
@@ -240,14 +247,7 @@ class H5MDH5Parser(HDF5Parser):
             return
 
         data = self.get_step_data(source_data, source['step']).get('value')
-        # print('in get_output_data')
-        # print(f'source_step: {source.get("step")}')
-        # print(f'output data: {data}')
-        # print(f'len(data): {len(data)}')
-        # import numpy as np
 
-        # print(f'np.array(data).shape: {np.array(data.magnitude).shape}')
-        # print(f'type(data): {type(data.magnitude)}')
         return data
 
     def get_custom_outputs(

@@ -184,57 +184,48 @@ class ModelSystem(model_system.ModelSystem):
     )
 
 
-# TODO inconsistent? shape with original def
-# model_system.
-# ! Correct, just removed for debugging
-# ModelSystem.bond_list.m_annotations.setdefault('mapping', {})['hdf5'] = (
-#     MapperAnnotation(mapper='connectivity.bonds')
+# ModelSystem.n_particles.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(mapper='length(particles.all.position.value.__value | [0])')
 # )
+
+# ModelSystem.n_particles.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(
+#         mapper=(
+#             'get_top_system_quantity',
+#             ['.@'],
+#             dict(path='particles.all.position', func=len),
+#         )
+#     )
+# )
+ModelSystem.n_particles.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(mapper='.n_particles')
+)
+
+
 ModelSystem.bond_list.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
         mapper=('get_top_system_quantity', ['.@'], dict(path='connectivity.bonds'))
     )
 )
 
+ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(
+        mapper=(
+            'get_top_system_quantity',
+            ['.@'],
+            dict(path='particles.all.box.@dimension'),
+        )
+    )
+)
 
-# model_system # ! conflicting with sub_systems
-# ModelSystem.dimensionality.m_annotations.setdefault('mapping', {})['hdf5'] = (
-#     MapperAnnotation(mapper=r'particles.all.box."@dimension"')
-# )
-
-# model_system.
 ModelSystem.positions.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    MapperAnnotation(
-        mapper=(
-            'get_traj_data',
-            ['.@'],
-            dict(path='particles.all.position'),
-        )
-    )
+    MapperAnnotation(mapper='.positions')
 )
 
-# model_system.
 ModelSystem.velocities.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    MapperAnnotation(
-        mapper=(
-            'get_traj_data',
-            ['.@'],
-            dict(path='particles.all.velocity'),
-        )
-    )
+    MapperAnnotation(mapper='.velocities')
 )
 
-# TODO length of positions in section data does not work
-# model_system # ! conflicting with sub_systems
-# ModelSystem.n_particles.m_annotations.setdefault('mapping', {})['hdf5'] = (
-#     MapperAnnotation(mapper='length(particles.all.position.value.__value | [0])')
-# )
-
-# model_system.ModelSystem.sub_systems.m_annotations.setdefault('mapping', {})['hdf5'] = (
-#     MapperAnnotation(
-#         mapper=('get_sub_systems', ['.@'], dict(path='connectivity.particles_group'))
-#     )
-# )
 ModelSystem.sub_systems.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper=('get_sub_systems', ['.@'], dict(path='connectivity')))
 )
@@ -249,14 +240,6 @@ ModelSystem.composition_formula.m_annotations.setdefault('mapping', {})['hdf5'] 
 
 
 ### SUBSECTIONS
-
-# ModelSystem.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
-#     MapperAnnotation(mapper='.model_system')
-# )
-
-# ModelSystem.particle_states.m_annotations.setdefault('mapping', {})['hdf5'] = (
-#     MapperAnnotation(mapper=('to_species_labels', ['particles.all.species_label']))
-# )
 
 
 # TODO need to add ParticleCell and distinguish in the parser
@@ -616,8 +599,11 @@ Simulation.program.m_annotations.setdefault('mapping', {})['hdf5'] = MapperAnnot
     mapper='h5md.program'
 )
 
+# Simulation.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
+#     MapperAnnotation(mapper=('get_system_steps', ['particles.all.position']))
+# )
 Simulation.model_system.m_annotations.setdefault('mapping', {})['hdf5'] = (
-    MapperAnnotation(mapper=('get_system_steps', ['particles.all.position']))
+    MapperAnnotation(mapper=('get_traj_data', ['particles.all']))
 )
 
 

@@ -60,7 +60,7 @@ def test_md(parser):
     assert len(sec_systems) == 5
     assert np.shape(sec_systems[0].positions) == (31583, 3)
     assert np.shape(sec_systems[0].velocities) == (31583, 3)
-    # assert sec_systems[0].n_particles == 31583
+    assert sec_systems[0].n_particles == 31583
     assert sec_systems[0].particle_states[100].chemical_symbol == 'H'
     assert sec_systems[0].particle_states[100].label == 'H'
 
@@ -73,8 +73,8 @@ def test_md(parser):
     assert sec_systems[3].cell[0].lattice_vectors[2][2].to(
         'angstrom'
     ).magnitude == approx(68.22318)
-    # assert sec_systems[3].cell[0].periodic_boundary_conditions == [True, True, True]
-    # # assert sec_systems[0].particle_states[200].atom_indices[0] == 200
+    assert sec_systems[3].cell[0].periodic_boundary_conditions == [True, True, True]
+    # assert sec_systems[0].particle_states[200].atom_indices[0] == 200
     assert sec_systems[0].bond_list[200][0] == 198
     # assert sec_systems[0].dimensionality == 3
 
@@ -93,7 +93,6 @@ def test_md(parser):
     assert len(sec_proteins) == 1
     assert sec_proteins[0].name == '1ZNF'
     # assert sec_proteins[0].type == 'molecule'
-    print(sec_proteins[0].composition_formula)
     assert (
         sec_proteins[0].composition_formula
         == 'ACE(1)TYR(1)LYS(3)CYS(2)GLY(1)LEU(2)GLU(2)ARG(3)SER(3)PHE(1)VAL(2)ALA(1)HIS(2)GLN(1)ASN(1)NH2(1)'
@@ -133,8 +132,6 @@ def test_md(parser):
     # Temperature
     assert sec_outputs[2].temperatures[0].value.to('kelvin').magnitude == approx(300.0)
     # Energies
-    print(sec_outputs[2].total_energies[0])
-    print(sec_outputs[2].total_energies[0].value)
     assert sec_outputs[2].total_energies[0].value.to('kilojoule').magnitude == approx(
         6.0
     )
@@ -171,8 +168,6 @@ def test_md(parser):
 
     ## WORKFLOW
     sec_workflow = archive.workflow2
-    print(sec_workflow.method)
-    print(sec_workflow)
     # MD method
     assert sec_workflow.method.integrator_type == 'langevin_leap_frog'
     assert sec_workflow.method.thermodynamic_ensemble == 'NPT'
