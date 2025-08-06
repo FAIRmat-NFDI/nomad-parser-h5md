@@ -62,15 +62,9 @@ class H5MDH5Parser(HDF5Parser):
                 return []
             source = self.get_source(self.data, kwargs['path'])
 
-        particles_group = source.get('particles_group', None)
-        if particles_group is None:
-            return []
+        particles_group = source.get('particles_group', {})
 
-        source = (
-            [group for group in particles_group.values()]
-            if isinstance(particles_group, dict)
-            else []
-        )
+        source = list(group for group in particles_group.values())
 
         return source
 
@@ -220,7 +214,7 @@ class H5MDH5Parser(HDF5Parser):
             contributions.append({'name': key, **step_data})
         return contributions
 
-    def get_output_data(self, source: dict[str, Any], **kwargs) -> pint.Quantity:
+    def get_output_data(self, source: dict[str, Any], **kwargs) -> pint.Quantity | None:
         if source.get('value') is not None:
             return source['value']
         if source.get('step') is None or kwargs.get('path') is None:
@@ -232,8 +226,8 @@ class H5MDH5Parser(HDF5Parser):
             'correlation_function',
         ]:
             self.logger.warning(
-                'Invalid or no obervable type defined in the schema annotation '
-                f'for {source.keys()}, skipping this observable.'
+                'Invalid or no obervable type defined in the schema annotation, '
+                'skipping this observable.'
             )
             return
 
