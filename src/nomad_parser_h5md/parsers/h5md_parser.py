@@ -6,16 +6,11 @@ from nomad_parser_h5md.schema_packages.schema import (
     Simulation,
     ParamEntry,
 )
-from nomad_parser_h5md.schema_packages.schema import ModelSystem
-
-# from nomad_simulations.schema_packages.model_system import ModelSystem
 from simulationworkflowschema.molecular_dynamics import MolecularDynamics
 from nomad_parser_h5md.parsers.mdparserutils import MDParser
 from nomad.units import ureg
 
 from nomad_parser_h5md.parsers.utils import remove_mapping_annotations
-
-from h5py import Group
 
 
 class H5MDH5Parser(HDF5Parser):
@@ -276,48 +271,6 @@ class H5MDH5Parser(HDF5Parser):
             custom_outputs.append({'name': key, **step_data})
         return custom_outputs
 
-    # def get_parameters(self, parameter_group: Group, path: str) -> dict:
-    #     param_dict: dict[Any, Any] = {}
-    #     for key, val in parameter_group.items():
-    #         path_key = f'{path}.{key}'
-    #         if isinstance(val, Group):
-    #             param_dict[key] = self.get_parameters(val, path_key)
-    #         else:
-    #             param_dict[key] = self._data_parser.get(path_key)
-    #             if isinstance(param_dict[key], str):
-    #                 param_dict[key] = (
-    #                     param_dict[key].upper()
-    #                     if key == 'thermodynamic_ensemble'
-    #                     else param_dict[key].lower()
-    #                 )
-    #             elif isinstance(param_dict[key], (int, np.int32, np.int64)):
-    #                 param_dict[key] = param_dict[key].item()
-    #     return param_dict
-
-    def get_md_parameters(
-        self, source: dict[str, Any], **kwargs
-    ) -> list[dict[str, Any]]:
-        if kwargs.get('path') is None:
-            return []
-
-        return []
-        # source_data = self.get_source(self.data, kwargs['path'])
-
-        # self._parameter_info = {'force_calculations': {}, 'workflow': {}}
-
-        # force_calculations_group = self._data_parser.get(
-        #     'parameters.force_calculations'
-        # )
-        # if force_calculations_group is not None:
-        #     self._parameter_info['force_calculations'] = self.get_parameters(
-        #         force_calculations_group, 'parameters.force_calculations'
-        #     )
-        # workflow_group = self._data_parser.get('parameters.workflow')
-        # if workflow_group is not None:
-        #     self._parameter_info['workflow'] = self.get_parameters(
-        #         workflow_group, 'parameters.workflow'
-        #     )
-
 
 class H5MDParser(MDParser):
     def __init__(self) -> None:
@@ -326,54 +279,6 @@ class H5MDParser(MDParser):
         self.simulation_parser = MetainfoParser()
         self.simulation_parser.max_nested_level = 10
         self.workflow_parser = MetainfoParser()
-
-    def parse_system_hierarchy(
-        self,
-        nomad_sec: ModelSystem,
-        h5md_sec_particlesgroup: Group,
-        path_particlesgroup: str,
-    ):
-        data = {}
-        for key in h5md_sec_particlesgroup.keys():
-            path_particlesgroup_key = f'{path_particlesgroup}.{key}'
-            particles_group = {
-                group_key: self._data_parser.get(
-                    f'{path_particlesgroup_key}.{group_key}'
-                )
-                for group_key in h5md_sec_particlesgroup[key].keys()
-            }
-            sec_model_system = ModelSystem()
-            nomad_sec.model_system.append(sec_model_system)
-            data['branch_label'] = particles_group.pop('label', None)
-            data['atom_indices'] = particles_group.pop('indices', None)
-            # TODO remove the deprecated below from the test file
-            # sec_atomsgroup.type = particles_group.pop("type", None) #? deprecate?
-            particles_group.pop('type', None)
-            # sec_atomsgroup.is_molecule = particles_group.pop("is_molecule", None) #? deprecate?
-            particles_group.pop('is_molecule', None)
-            particles_group.pop('formula', None)  # covered in normalization now
-            # write all the standard quantities to the archive
-            # print(sec_model_system.sub_systems)
-            self.parse_section(data, sec_model_system.sub_systems)
-            # print(sec_model_system.sub_systems)
-            particles_subgroup = particles_group.pop('particles_group', None)
-
-            # set the remaining attributes
-            for particles_group_key in particles_group.keys():
-                val = particles_group.get(particles_group_key)
-                units = val.units if hasattr(val, 'units') else None
-                val = val.magnitude if units is not None else val
-                sec_model_system.custom_system_attributes.append(
-                    ParamEntry(name=particles_group_key, value=val, unit=units)
-                )
-
-            # get the next branch level
-            if particles_subgroup:
-                self.parse_system_hierarchy(
-                    sec_model_system,
-                    particles_subgroup,
-                    f'{path_particlesgroup_key}.particles_group',
-                )
 
     def write_to_archive(self) -> None:
         # create h5 parser

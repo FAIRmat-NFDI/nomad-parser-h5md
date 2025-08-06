@@ -29,7 +29,6 @@ from nomad_simulations.schema_packages import (
     outputs,
     properties,
 )
-from nomad_simulations.schema_packages import physical_property
 from simulationworkflowschema import molecular_dynamics
 
 m_package = SchemaPackage()
@@ -121,7 +120,7 @@ general.Program.version.m_annotations.setdefault('mapping', {})['hdf5'] = (
 
 # SIMULATION.MODEL_SYSTEM --> archive.data.model_system
 
-
+# TODO Extend to CGBeadState
 ## class ParticleState(atoms_state.ParticleState):
 
 
@@ -181,6 +180,17 @@ class ModelSystem(model_system.ModelSystem):
         )
     )
 
+
+# TODO add annotaiton for custom_system_attributes
+# ModelSystem.custom_system_attributes.m_annotations.setdefault('mapping', {})[
+#     'hdf5'
+# ] = MapperAnnotation(
+#     mapper=(
+#         'get_custom_system_attributes',
+#         ['.@'],
+#         dict(path=''),
+#     )
+# )
 
 ModelSystem.n_particles.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(mapper='.n_particles')
@@ -242,13 +252,10 @@ ModelSystem.branch_label.m_annotations.setdefault('mapping', {})['hdf5'] = (
 # TODO need to add ParticleCell and distinguish in the parser
 #### model_system.cell --> AtomicCell
 
-# TODO mabye a note here
-#### model_system.model_system --> ModelSystem
-
 
 # SIMULATION.METHOD --> archive.data.method
 
-
+# TODO Add method, including full FF example
 # class ForceCalculations(runschema.method.ForceCalculations):
 #     m_def = Section(
 #         validate=False,
@@ -430,7 +437,7 @@ class TrajectoryOutputs(outputs.TrajectoryOutputs):
         repeats=True,
     )
 
-    total_forces = SubSection(sub_section=TotalForce.m_def, repeats=True)
+    total_forces = SubSection(sub_section=properties.TotalForce.m_def, repeats=True)
 
 
 TrajectoryOutputs.m_def.m_annotations.setdefault('mapping', {})['hdf5'] = (
@@ -943,12 +950,11 @@ molecular_dynamics.FreeEnergyCalculationParameters.lambdas.m_annotations.setdefa
 
 
 ## class Lambdas(molecular_dynamics.Lambdas):
-
+# TODO add lambdas to test data
 
 # ? Not sure about where this info is going in h5md
 h5md_path_lambdas = f'{h5md_path_FEC}.lambdas'
 
-# TODO lambda_type?
 molecular_dynamics.Lambdas.type.m_annotations.setdefault('mapping', {})['hdf5'] = (
     MapperAnnotation(
         mapper=(
@@ -1159,7 +1165,7 @@ molecular_dynamics.MolecularDynamicsResults.free_energy_calculations.m_annotatio
 )['hdf5'] = MapperAnnotation(mapper='.@')
 
 
-## class MolecularDynamics(molecular_dynamics.MolecularDynamics):
+# class MolecularDynamics(molecular_dynamics.MolecularDynamics):
 
 
 molecular_dynamics.MolecularDynamics.m_def.m_annotations.setdefault('mapping', {})[
