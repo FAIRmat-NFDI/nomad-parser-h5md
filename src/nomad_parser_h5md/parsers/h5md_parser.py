@@ -33,7 +33,10 @@ class H5MDH5Parser(HDF5Parser):
             value = value * factor
         return value
 
-    def get_source(self, parent: dict[str, Any], path: str):
+    def get_source(self, parent: dict[str, Any], path: str) -> Any:
+        if path is None:
+            return {}
+
         path_segments = path.split('.', 1)
         source = parent.get(path_segments[0], {})
 
@@ -76,6 +79,12 @@ class H5MDH5Parser(HDF5Parser):
         velocities = self.get_source(source, 'velocity')
         velocities = self.get_value('value', velocities)
 
+        assert len(steps) == len(times) == len(positions)
+        if velocities is not None:
+            assert len(positions) == len(velocities)
+        # TODO add len assertion for other system traj properties
+        # TODO or generalize to store properly
+
         traj_data = [
             {
                 'step': step,
@@ -115,7 +124,7 @@ class H5MDH5Parser(HDF5Parser):
         system_data = {}
         for name, path in source_paths:
             data = self.get_source(particles, path)
-            if data is None:
+            if not data:
                 continue
             step_data = self.get_step_data(data, source.get('step'))
             if not step_data:
@@ -128,8 +137,12 @@ class H5MDH5Parser(HDF5Parser):
 
         return system_data
 
-    def to_species_labels(self, source: list[str], **kwargs) -> list[dict[str, Any]]:
-        if kwargs.get('path') is None or source.get('step') is None:
+    def to_species_labels(
+        self, source: dict[str, Any], **kwargs
+    ) -> list[dict[str, Any]]:
+        print('in to_species_labels')
+        print(type(source))
+        if source.get('step') is None:
             return []
 
         source_data = self.get_source(self.data, kwargs['path'])
@@ -137,9 +150,9 @@ class H5MDH5Parser(HDF5Parser):
         return [{'chemical_symbol': s, 'label': s} for s in source_data]
 
     def get_top_system_quantity(
-        self, source: list[str], **kwargs
+        self, source: dict[str, Any], **kwargs
     ) -> list[dict[str, Any]]:
-        if kwargs.get('path') is None or source.get('step') is None:
+        if source.get('step') is None:
             return []
 
         source_data = self.get_source(self.data, kwargs['path'])
@@ -200,7 +213,7 @@ class H5MDH5Parser(HDF5Parser):
     def get_contributions(
         self, source: dict[str, Any], **kwargs
     ) -> list[dict[str, Any]]:
-        if kwargs.get('path') is None or source.get('step') is None:
+        if source.get('step') is None:
             return []
 
         source_data = self.get_source(self.data, kwargs['path'])
@@ -217,7 +230,7 @@ class H5MDH5Parser(HDF5Parser):
     def get_output_data(self, source: dict[str, Any], **kwargs) -> pint.Quantity | None:
         if source.get('value') is not None:
             return source['value']
-        if source.get('step') is None or kwargs.get('path') is None:
+        if source.get('step') is None:
             return
         observable_type = kwargs.get('observable_type')
         if observable_type is None or observable_type not in [
@@ -242,7 +255,7 @@ class H5MDH5Parser(HDF5Parser):
     def get_custom_outputs(
         self, source: dict[str, Any], **kwargs
     ) -> list[dict[str, Any]]:
-        if kwargs.get('path') is None or source.get('step') is None:
+        if source.get('step') is None:
             return []
 
         source_data = self.get_source(self.data, kwargs['path'])
