@@ -26,8 +26,7 @@ try:
     from MDAnalysis.topology.guessers import guess_atom_element
 except Exception:
     MDAnalysis = None
-from typing import Any, Dict
-from nptyping import NDArray
+from typing import Any
 from collections import namedtuple
 from array import array
 from scipy import sparse
@@ -103,7 +102,7 @@ class MDAnalysisParser(FileParser):
 
     def parse(self, quantity_key: str = None, **kwargs):
         if self._results is None:
-            self._results: Dict[str, Any] = dict()
+            self._results: dict[str, Any] = dict()
 
         if not self.universe:
             return
@@ -487,7 +486,9 @@ class MDAnalysisParser(FileParser):
 
         return interactions
 
-    def __calc_diffusion_constant(self, times: NDArray, values: NDArray, dim: int = 3):
+    def __calc_diffusion_constant(
+        self, times: np.ndarray, values: np.ndarray, dim: int = 3
+    ):
         """
         Determines the diffusion constant from a fit of the mean squared displacement
         vs. time according to the Einstein relation.

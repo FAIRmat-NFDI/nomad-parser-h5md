@@ -58,39 +58,66 @@ def test_md(parser):
     ## SYSTEM
     sec_systems = sec_simulation.model_system
     assert len(sec_systems) == 5
-    assert np.shape(sec_systems[0].cell[0].positions) == (31583, 3)
-    assert np.shape(sec_systems[0].cell[0].velocities) == (31583, 3)
-    assert sec_systems[0].cell[0].n_atoms == 31583
-    assert sec_systems[0].cell[0].atoms_state[100].chemical_symbol == 'H'
+    assert np.shape(sec_systems[0].positions) == (31583, 3)
+    assert np.shape(sec_systems[0].velocities) == (31583, 3)
+    assert sec_systems[0].n_particles == 31583
+    assert sec_systems[0].particle_states[100].chemical_symbol == 'H'
+    assert sec_systems[0].particle_states[100].label == 'H'
 
-    assert sec_systems[2].cell[0].positions[800][1].to('angstrom').magnitude == approx(
+    assert sec_systems[2].positions[800][1].to('angstrom').magnitude == approx(
         26.860575
     )
-    assert sec_systems[2].cell[0].velocities[1200][2].to(
-        'angstrom/ps'
-    ).magnitude == approx(400.0)
+    assert sec_systems[2].velocities[1200][2].to('angstrom/ps').magnitude == approx(
+        400.0
+    )
     assert sec_systems[3].cell[0].lattice_vectors[2][2].to(
         'angstrom'
     ).magnitude == approx(68.22318)
+    assert sec_systems[3].cell[0].periodic_boundary_conditions == [True, True, True]
     assert sec_systems[0].bond_list[200][0] == 198
     assert sec_systems[0].dimensionality == 3
+    assert sec_systems[0].is_molecule() is False
 
-    # sec_atoms_group = sec_systems[0].model_system
-    # assert len(sec_atoms_group) == 4
-    # assert sec_atoms_group[0].branch_label == 'group_1ZNF'
-    # assert sec_atoms_group[0].atom_indices[159] == 159
-    # sec_proteins = sec_atoms_group[0].model_system
-    # assert len(sec_proteins) == 1
-    # assert sec_proteins[0].branch_label == '1ZNF'
-    # assert sec_proteins[0].atom_indices[400] == 400
-    # sec_res_group = sec_proteins[0].model_system
-    # assert len(sec_res_group) == 16
-    # assert sec_res_group[14].branch_label == 'group_SER'
-    # assert sec_res_group[14].atom_indices[2] == 136
-    # sec_res = sec_res_group[14].model_system
-    # assert len(sec_res) == 3
-    # assert sec_res[0].branch_label == 'SER'
-    # assert sec_res[0].atom_indices[10] == 144
+    ## SYSTEM HIERARCHY
+    sec_atoms_group = sec_systems[0].sub_systems
+    assert len(sec_atoms_group) == 4
+    assert sec_atoms_group[0].particle_states == []
+    assert sec_atoms_group[0].cell == []
+    assert sec_atoms_group[0].name == 'group_1ZNF'
+    assert sec_atoms_group[0].branch_label == 'molecule_group'
+    assert sec_atoms_group[0].composition_formula == '1ZNF(1)'
+    assert sec_atoms_group[0].particle_indices[159] == 159
+    assert sec_atoms_group[0].is_molecule() is True
+    sec_proteins = sec_atoms_group[0].sub_systems
+    assert len(sec_proteins) == 1
+    assert sec_proteins[0].name == '1ZNF'
+    assert sec_proteins[0].branch_label == 'molecule'
+    assert (
+        sec_proteins[0].composition_formula
+        == 'ACE(1)TYR(1)LYS(3)CYS(2)GLY(1)LEU(2)GLU(2)ARG(3)SER(3)PHE(1)VAL(2)ALA(1)HIS(2)GLN(1)ASN(1)NH2(1)'
+    )
+    assert sec_proteins[0].particle_indices[400] == 400
+    assert sec_proteins[0].is_molecule() is True
+    sec_res_group = sec_proteins[0].sub_systems
+    assert len(sec_res_group) == 16
+    assert sec_res_group[13].name == 'group_ARG'
+    assert sec_res_group[14].branch_label == 'monomer_group'
+    assert sec_res_group[13].composition_formula == 'ARG(3)'
+    assert (
+        sec_res_group[14].particle_indices[2] == 136
+    )  # TODO need to explicitly check this
+    assert sec_res_group[14].is_molecule() is False
+    sec_res = sec_res_group[13].sub_systems
+    assert len(sec_res) == 3
+    assert sec_res[0].name == 'ARG'
+    assert sec_res[0].branch_label == 'monomer'
+    assert (
+        sec_res[0].composition_formula
+        == 'C(1)CA(1)CB(1)CD(1)CG(1)CZ(1)H(1)HA(1)HB2(1)HB3(1)HD2(1)HD3(1)HE(1)HG2(1)HG3(1)HH11(1)HH12(1)HH21(1)HH22(1)N(1)NE(1)NH1(1)NH2(1)O(1)'
+    )
+    assert sec_res[0].particle_indices[10] == 120  # TODO need to explicitly check this
+    assert sec_res[0].is_molecule() is False
+    # TODO come back to this
     # assert sec_res[0].custom_system_attributes[0].name == 'hydrophobicity'
     # assert sec_res[0].custom_system_attributes[0].value == '0.13'
     # assert sec_res[0].custom_system_attributes[0].unit is None
@@ -103,8 +130,6 @@ def test_md(parser):
     # Temperature
     assert sec_outputs[2].temperatures[0].value.to('kelvin').magnitude == approx(300.0)
     # Energies
-    print(sec_outputs[2].total_energies[0])
-    print(sec_outputs[2].total_energies[0].value)
     assert sec_outputs[2].total_energies[0].value.to('kilojoule').magnitude == approx(
         6.0
     )
@@ -192,23 +217,39 @@ def test_md(parser):
     assert sec_barostat[0].step_end == None
     # MD Shear
     sec_shear = sec_workflow.method.shear_parameters
-    assert sec_shear == []
+    assert sec_shear[0].shear_type == 'lees_edwards'
+    assert np.all(
+        sec_shear[0].shear_rate.to('1 / picosecond').magnitude
+        == [[0.0, 0.0, 0.01], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+    )
     # assert sec_shear[0].shear_type == None
     # assert sec_shear[0].shear_rate == None
-    # assert sec_shear[0].step_start == None
-    # assert sec_shear[0].step_end == None
     # MD Free Energy Calculation Parameters
     sec_free_energy = sec_workflow.method.free_energy_calculation_parameters
-    assert sec_free_energy == []
-    # assert sec_free_energy[0].type == None
-    # assert sec_free_energy[0].lambda_index == None
-    # assert sec_free_energy[0].atom_indices == None
-    # assert sec_free_energy[0].initial_state_vdw == None
-    # assert sec_free_energy[0].final_state_vdw == None
-    # assert sec_free_energy[0].initial_state_coloumb == None
-    # assert sec_free_energy[0].final_state_coloumb == None
-    # assert sec_free_energy[0].initial_state_bonded == None
-    # assert sec_free_energy[0].final_state_bonded == None
-    # sec_lambdas = sec_free_energy[0].lambdas
-    # assert sec_lambdas[0].type == None
-    # assert sec_lambdas[0].value == None
+    # sec_results = sec_workflow.results.free_energy_calculations[0]
+
+    assert sec_free_energy[0].type == 'alchemical'
+    # sec_lambdas = sec_method.lambdas
+    # assert len(sec_lambdas) == 7
+    # assert sec_lambdas[2].type == 'vdw'
+    # assert sec_lambdas[2].value[2] == 0.2
+    # assert sec_lambdas[-1].type == 'temperature'
+    # assert sec_lambdas[-1].value[2] == 0.0
+    assert sec_free_energy[0].lambda_index == 7
+    assert sec_free_energy[0].atom_indices.shape == (
+        1,
+    )  # TODO change to particle_indices in the schema
+    assert sec_free_energy[0].atom_indices[0] == 0
+    assert sec_free_energy[0].initial_state_vdw is True
+    assert sec_free_energy[0].final_state_vdw is False
+    assert sec_free_energy[0].initial_state_coloumb is False
+    assert sec_free_energy[0].final_state_coloumb is False
+    assert sec_free_energy[0].initial_state_bonded is True
+    assert sec_free_energy[0].final_state_bonded is True
+
+    # assert sec_results.n_frames == 5001
+    # assert sec_results.n_states == 11
+    # assert sec_results.lambda_index == 7
+    # assert len(sec_results.times) == 5001
+    # assert sec_results.times.to('ps')[10].magnitude == approx(2.0)
+    # assert sec_results.value_unit == 'kilojoule'

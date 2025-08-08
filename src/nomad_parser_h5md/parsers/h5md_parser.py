@@ -1,20 +1,24 @@
-from typing import List, Dict, Any
+from typing import Any
 import pint
 
 from nomad.parsing.file_parser.mapping_parser import HDF5Parser, MetainfoParser, Path
-from nomad_parser_h5md.schema_packages.schema import Simulation, MolecularDynamics
+from nomad_parser_h5md.schema_packages.schema import (
+    Simulation,
+    ParamEntry,
+)
+from simulationworkflowschema.molecular_dynamics import MolecularDynamics
 from nomad_parser_h5md.parsers.mdparserutils import MDParser
 from nomad.units import ureg
 
-from h5py import Group
+from nomad_parser_h5md.parsers.utils import remove_mapping_annotations
 
 
 class H5MDH5Parser(HDF5Parser):
-    trajectory_steps: List[int] = []
-    output_steps: List[int] = []
-    observables: Dict[str, Any] = {}
+    trajectory_steps: list[int] = []
+    output_steps: list[int] = []
+    observables: dict[str, Any] = {}
 
-    def get_value(self, name: str, dct: Dict[str, Any]) -> Any:
+    def get_value(self, name: str, dct: dict[str, Any]) -> Any:
         value = dct.get(name, {})
         if not isinstance(value, dict):
             return value
@@ -29,90 +33,73 @@ class H5MDH5Parser(HDF5Parser):
             value = value * factor
         return value
 
-    def get_source(self, parent: Dict[str, Any], path: str):
+    def get_source(self, parent: dict[str, Any], path: str) -> Any:
+        if path is None:
+            return {}
+
         path_segments = path.split('.', 1)
         source = parent.get(path_segments[0], {})
+
         if len(path_segments) == 1:
             return source
         return self.get_source(source, path_segments[1])
 
-    def map_value(self, source: Dict[str, Any], **kwargs) -> Any:
+    def map_value(self, source: dict[str, Any], **kwargs) -> Any:
         if kwargs.get('key') is None:
             return None
 
-        return self.get_value(kwargs.get('key'), source)
+        value = self.get_value(kwargs.get('key'), source)
 
-    def get_system_hierarchy(
-        self,
-        particlesgroup: {},
-    ) -> List[Dict[str, Any]]:
-        data = []
-        for key, dct in particlesgroup.items():
-            data.append(dct)
-            path_particlesgroup_key = f'{path_particlesgroup}.{key}'
+        enum_spec = kwargs.get('enum_spec', None)
+        if enum_spec == 'upper':
+            return value.upper() if isinstance(value, str) else value
+        elif enum_spec == 'lower':
+            return value.lower() if isinstance(value, str) else value
 
-            particles_group = {
-                group_key: h5md_sec_particlesgroup.get(
-                    f'{path_particlesgroup_key}.{group_key}'
-                )
-                for group_key in h5md_sec_particlesgroup[key].keys()
+        return value
+
+    def get_sub_systems(self, source: dict[str, Any], **kwargs) -> list[dict[str, Any]]:
+        step = source.get('step', None)
+        if step is not None:
+            if step != 0:  # TODO extend to time-dependent bond lists and topologies
+                return []
+            source = self.get_source(self.data, kwargs['path'])
+
+        particles_group = source.get('particles_group', {})
+
+        source = list(group for group in particles_group.values())
+
+        return source
+
+    def get_traj_data(self, source: dict[str, Any]) -> list[dict[str, Any]]:
+        positions = self.get_source(source, 'position')
+        steps = self.get_value('step', positions)
+        times = self.get_value('time', positions)
+        positions = self.get_value('value', positions)
+        velocities = self.get_source(source, 'velocity')
+        velocities = self.get_value('value', velocities)
+
+        assert len(steps) == len(times) == len(positions)
+        if velocities is not None:
+            assert len(positions) == len(velocities)
+        # TODO add len assertion for other system traj properties
+        # TODO or generalize to store properly
+
+        traj_data = [
+            {
+                'step': step,
+                'time': times[n],
+                'n_particles': len(positions[n]) if len(positions) != 0 else [],
+                'positions': positions[n] if len(positions) != 0 else [],
+                'velocities': velocities[n] if len(velocities) != 0 else [],
             }
-
-            particles_group = {
-                group_key: self.data.get(f'{path_particlesgroup_key}.{group_key}')
-                for group_key in h5md_sec_particlesgroup[key].keys()
-            }
-            data['branch_label'] = particles_group.pop('label', None)
-            data['atom_indices'] = particles_group.pop('indices', None)
-            # TODO remove the deprecated below from the test file
-            data['type'] = particles_group.pop('type', None)  # ? deprecate?
-            data['is_molecule'] = particles_group.pop(
-                'is_molecule', None
-            )  # ? deprecate?
-            particles_group.pop('formula', None)  # covered in normalization now
-            # write all the standard quantities to the archive
-            particles_subgroup = particles_group.pop('particles_group', None)
-
-            # set the remaining attributes
-            data['custom_system_attributes'] = []
-            for particles_group_key in particles_group.keys():
-                val = particles_group.get(particles_group_key)
-                units = val.units if hasattr(val, 'units') else None
-                val = val.magnitude if units is not None else val
-                data['custom_system_attributes'].append(
-                    {'name': particles_group_key, 'value': val, 'unit': units}
-                )
-
-            # get the next branch level
-            if particles_subgroup:
-                self.get_system_hierarchy(
-                    particles_subgroup,
-                    f'{path_particlesgroup_key}.particles_group',
-                )
-
-        return []
-
-    def get_system_steps(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
-        steps = self.get_value('step', source)
-        times = self.get_value('time', source)
-        system_steps = [
-            {'step': step, 'time': times[n]}
             for n, step in enumerate(steps)
             if step in self.trajectory_steps
         ]
 
-        # get system hierarchy and store in first step
-        # h5md_sec_particlesgroup = self.data.get('connectivity', {}).get(
-        #     'particles_group'
-        # )
-        # hierarchy = self.get_system_hierarchy(
-        #     h5md_sec_particlesgroup=h5md_sec_particlesgroup,
-        #     path_particlesgroup='connectivity.particles_group',
-        # )
-        # system_steps[system_steps.keys()[0]]['model_system'] = hierarchy
-        return system_steps
+        return traj_data
 
-    def get_step_data(self, data: Dict[str, Any], step: int) -> Dict[str, Any]:
+    def get_step_data(self, data: dict[str, Any], step: int) -> dict[str, Any]:
         step_data = {}
         value = self.get_value('value', data)
         steps = self.get_value('step', data)
@@ -124,20 +111,20 @@ class H5MDH5Parser(HDF5Parser):
         step_data['time'] = times[index]
         return step_data
 
-    def get_system_data(self, source: Dict[str, Any]) -> Dict[str, Any]:
+    def get_cell_data(self, source: dict[str, Any]) -> dict[str, Any]:
+        if not source.get('step'):
+            return {}
         particles = self.data.get('particles', {}).get('all')
         if particles is None:
             return {}
 
         source_paths = [
-            ('positions', 'position'),
             ('lattice_vectors', 'box.edges'),
-            ('velocities', 'velocity'),
         ]
         system_data = {}
         for name, path in source_paths:
             data = self.get_source(particles, path)
-            if data is None:
+            if not data:
                 continue
             step_data = self.get_step_data(data, source.get('step'))
             if not step_data:
@@ -150,13 +137,41 @@ class H5MDH5Parser(HDF5Parser):
 
         return system_data
 
-    def to_species_labels(self, source: List[str]) -> List[Dict[str, Any]]:
-        return [{'label': s} for s in source]
+    def to_species_labels(
+        self, source: dict[str, Any], **kwargs
+    ) -> list[dict[str, Any]]:
+        print('in to_species_labels')
+        print(type(source))
+        if source.get('step') is None:
+            return []
 
-    def get_output_steps(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
+        source_data = self.get_source(self.data, kwargs['path'])
+
+        return [{'chemical_symbol': s, 'label': s} for s in source_data]
+
+    def get_top_system_quantity(
+        self, source: dict[str, Any], **kwargs
+    ) -> list[dict[str, Any]]:
+        if source.get('step') is None:
+            return []
+
+        source_data = self.get_source(self.data, kwargs['path'])
+        if kwargs.get('func'):
+            try:
+                source_data = kwargs.get('func')(source_data)
+            except Exception:
+                self.logger.warning(
+                    'Error applying function to get top level system quantity, '
+                    'will not be populated.'
+                )
+                return []
+
+        return self.get_source(self.data, kwargs['path'])
+
+    def get_output_steps(self, source: dict[str, Any]) -> list[dict[str, Any]]:
         output_steps = {}
 
-        def get_steps(dct: Dict[str, Any]) -> Dict[str, Any]:
+        def get_steps(dct: dict[str, Any]) -> dict[str, Any]:
             steps = self.get_value('step', dct)
             if steps is None:
                 return {}
@@ -169,7 +184,7 @@ class H5MDH5Parser(HDF5Parser):
             return {step: times[n] for n, step in enumerate(steps)}
 
         def get_observable_steps(
-            source: Dict[str, Any], output_steps: Dict[str, Any]
+            source: dict[str, Any], output_steps: dict[str, Any]
         ) -> None:
             for __, val in source.items():
                 observable_type = val.get('@type')
@@ -196,9 +211,9 @@ class H5MDH5Parser(HDF5Parser):
         return output_steps
 
     def get_contributions(
-        self, source: Dict[str, Any], **kwargs
-    ) -> List[Dict[str, Any]]:
-        if kwargs.get('path') is None or source.get('step') is None:
+        self, source: dict[str, Any], **kwargs
+    ) -> list[dict[str, Any]]:
+        if source.get('step') is None:
             return []
 
         source_data = self.get_source(self.data, kwargs['path'])
@@ -212,10 +227,10 @@ class H5MDH5Parser(HDF5Parser):
             contributions.append({'name': key, **step_data})
         return contributions
 
-    def get_output_data(self, source: Dict[str, Any], **kwargs) -> pint.Quantity:
+    def get_output_data(self, source: dict[str, Any], **kwargs) -> pint.Quantity | None:
         if source.get('value') is not None:
             return source['value']
-        if source.get('step') is None or kwargs.get('path') is None:
+        if source.get('step') is None:
             return
         observable_type = kwargs.get('observable_type')
         if observable_type is None or observable_type not in [
@@ -224,20 +239,23 @@ class H5MDH5Parser(HDF5Parser):
             'correlation_function',
         ]:
             self.logger.warning(
-                'Invalid or no obervable type defined in the schema annotation '
-                f'for {source.keys()},skipping this observable.'
+                'Invalid or no obervable type defined in the schema annotation, '
+                'skipping this observable.'
             )
             return
 
         source_data = self.get_source(self.data, kwargs['path'])
         if source_data.get('@type') != observable_type:
             return
-        return self.get_step_data(source_data, source['step']).get('value')
+
+        data = self.get_step_data(source_data, source['step']).get('value')
+
+        return data
 
     def get_custom_outputs(
-        self, source: Dict[str, Any], **kwargs
-    ) -> List[Dict[str, Any]]:
-        if kwargs.get('path') is None or source.get('step') is None:
+        self, source: dict[str, Any], **kwargs
+    ) -> list[dict[str, Any]]:
+        if source.get('step') is None:
             return []
 
         source_data = self.get_source(self.data, kwargs['path'])
@@ -260,54 +278,13 @@ class H5MDH5Parser(HDF5Parser):
             custom_outputs.append({'name': key, **step_data})
         return custom_outputs
 
-    # def get_parameters(self, parameter_group: Group, path: str) -> Dict:
-    #     param_dict: Dict[Any, Any] = {}
-    #     for key, val in parameter_group.items():
-    #         path_key = f'{path}.{key}'
-    #         if isinstance(val, Group):
-    #             param_dict[key] = self.get_parameters(val, path_key)
-    #         else:
-    #             param_dict[key] = self._data_parser.get(path_key)
-    #             if isinstance(param_dict[key], str):
-    #                 param_dict[key] = (
-    #                     param_dict[key].upper()
-    #                     if key == 'thermodynamic_ensemble'
-    #                     else param_dict[key].lower()
-    #                 )
-    #             elif isinstance(param_dict[key], (int, np.int32, np.int64)):
-    #                 param_dict[key] = param_dict[key].item()
-    #     return param_dict
-
-    def get_md_parameters(
-        self, source: Dict[str, Any], **kwargs
-    ) -> List[Dict[str, Any]]:
-        if kwargs.get('path') is None:
-            return []
-
-        return []
-        # source_data = self.get_source(self.data, kwargs['path'])
-
-        # self._parameter_info = {'force_calculations': {}, 'workflow': {}}
-
-        # force_calculations_group = self._data_parser.get(
-        #     'parameters.force_calculations'
-        # )
-        # if force_calculations_group is not None:
-        #     self._parameter_info['force_calculations'] = self.get_parameters(
-        #         force_calculations_group, 'parameters.force_calculations'
-        #     )
-        # workflow_group = self._data_parser.get('parameters.workflow')
-        # if workflow_group is not None:
-        #     self._parameter_info['workflow'] = self.get_parameters(
-        #         workflow_group, 'parameters.workflow'
-        #     )
-
 
 class H5MDParser(MDParser):
     def __init__(self) -> None:
         super().__init__()
         self.h5_parser = H5MDH5Parser()
         self.simulation_parser = MetainfoParser()
+        self.simulation_parser.max_nested_level = 10
         self.workflow_parser = MetainfoParser()
 
     def write_to_archive(self) -> None:
@@ -336,6 +313,9 @@ class H5MDParser(MDParser):
         self.archive.data = self.simulation_parser.data_object
         self.archive.workflow2 = self.workflow_parser.data_object
 
+        # close parsers
         self.h5_parser.close()
-
         self.simulation_parser.close()
+
+        # remove mapping annotations
+        remove_mapping_annotations(self.archive.data.m_def)

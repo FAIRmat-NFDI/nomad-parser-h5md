@@ -34,7 +34,7 @@ dependencies = [
 Repository = "https://github.com/FAIRmat-NFDI/nomad-parser-h5md"
 
 [project.optional-dependencies]
-dev = ["ruff", "pytest", "structlog"]
+dev = ["ruff", "pytest", "structlog", 'mypy>=1.15']
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
