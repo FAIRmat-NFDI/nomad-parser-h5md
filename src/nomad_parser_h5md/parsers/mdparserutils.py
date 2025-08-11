@@ -35,8 +35,8 @@ from nomad_simulations.schema_packages.outputs import (
     TotalEnergy,
     TotalForce,
 )
-from nomad_simulations.schema_packages.properties.energies import EnergyContribution
-from nomad_simulations.schema_packages.properties.forces import ForceContribution
+from nomad_simulations.schema_packages.properties.energies import BaseEnergy
+from nomad_simulations.schema_packages.properties.forces import BaseForce
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
@@ -197,7 +197,7 @@ class MDParser(Parser):
                 output.total_energies.append(TotalEnergy())
 
         for energy_dict in energy_contributions:
-            energy = EnergyContribution()  # self.energy_classes[energy_label]()
+            energy = BaseEnergy()  # self.energy_classes[energy_label]()
             output.total_energies[-1].contributions.append(energy)
             self.parse_section(energy_dict, energy)
 
@@ -206,7 +206,7 @@ class MDParser(Parser):
                 output.total_forces.append(TotalForce())
 
         for force_dict in force_contributions:
-            force = ForceContribution()  #  self.force_classes[force_label]()
+            force = BaseForce()  #  self.force_classes[force_label]()
             output.total_forces[-1].contributions.append(force)
             self.parse_section(force_dict, force)
 
