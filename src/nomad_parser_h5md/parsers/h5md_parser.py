@@ -140,8 +140,6 @@ class H5MDH5Parser(HDF5Parser):
     def to_species_labels(
         self, source: dict[str, Any], **kwargs
     ) -> list[dict[str, Any]]:
-        print('in to_species_labels')
-        print(type(source))
         if source.get('step') is None:
             return []
 
