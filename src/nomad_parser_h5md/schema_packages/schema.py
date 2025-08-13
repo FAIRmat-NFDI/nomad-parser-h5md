@@ -345,9 +345,12 @@ class CustomProperty(ArchiveSection):
 # value annotation defined in TotalEnergy.value since they refer to the same quantity
 # in this case, we make sure to return the corresponding value from
 # the get_contributions function in the TotalEnergy.contributions annotation
-properties.energies.EnergyContribution.name.m_annotations.setdefault('mapping', {})[
-    'hdf5'
-] = MapperAnnotation(mapper='.name')
+# properties.energies.EnergyContribution.name.m_annotations.setdefault('mapping', {})[
+#     'hdf5'
+# ] = MapperAnnotation(mapper='.name')
+properties.energies.BaseEnergy.name.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(mapper='.name')
+)
 
 
 ## class TotalEnergy(properties.TotalEnergy):
@@ -379,9 +382,12 @@ properties.TotalEnergy.contributions.m_annotations.setdefault('mapping', {})['hd
 ## class ForceContribution(properties.forces.ForceContribution):
 
 
-properties.forces.ForceContribution.name.m_annotations.setdefault('mapping', {})[
-    'hdf5'
-] = MapperAnnotation(mapper='.name')
+# properties.forces.ForceContribution.name.m_annotations.setdefault('mapping', {})[
+#     'hdf5'
+# ] = MapperAnnotation(mapper='.name')
+properties.forces.BaseForce.name.m_annotations.setdefault('mapping', {})['hdf5'] = (
+    MapperAnnotation(mapper='.name')
+)
 
 
 ## class TotalForce(properties.TotalForce):
@@ -437,6 +443,7 @@ class TrajectoryOutputs(outputs.TrajectoryOutputs):
         repeats=True,
     )
 
+    # ? No longer needed?
     total_forces = SubSection(sub_section=properties.TotalForce.m_def, repeats=True)
 
 
