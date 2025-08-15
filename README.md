@@ -4,6 +4,9 @@ NOMAD parser plugin for h5md-based simulation files.
 
 This `nomad` plugin was generated with `Cookiecutter` along with `@nomad`'s [`cookiecutter-nomad-plugin`](https://github.com/FAIRmat-NFDI/cookiecutter-nomad-plugin) template.
 
+## 🚨 Repository Archived 🚨
+This repository is no longer maintained.  
+Development continues at: [nomad-parser-plugins-simulation](https://github.com/FAIRmat-NFDI/nomad-parser-plugins-simulation)
 
 ## Development
 
